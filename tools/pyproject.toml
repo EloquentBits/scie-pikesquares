@@ -1,0 +1,48 @@
+[build-system]
+requires = [
+  "setuptools",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scie-pikesquares"
+dynamic = [
+  "dependencies",
+]
+
+version = "0.0.1"
+description = ''
+#readme = "README.md"
+requires-python = ">=3.12"
+keywords = []
+authors = [
+  { name = "Philip Kalinsky", email = "philip.kalinsky@eloquentbits.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+]
+[project.urls]
+Documentation = "https://github.com/EloquentBits/scie-pikesquares#readme"
+Issues = "https://github.com/EloquentBits/scie-pikesquares/issues"
+Source = "https://github.com/EloquentBits/scie-pikesquares"
+
+[project.scripts]
+bootstrap-tools = "scie_pikesquares.bootstrap_tools:main"
+configure-pikesquares = "scie_pikesquares.configure_pikesquares:main"
+install-pikesquares = "scie_pikesquares.install_pikesquares:main"
+update-scie-pikesquares = "scie_pikesquares.update_scie_pikesquares:main"
+record-scie-pikesquares-info = "scie_pikesquares.record_scie_pikesquares:main"
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+
+[[tool.mypy.overrides]]
+module = "colors"
+ignore_missing_imports = true

@@ -1,0 +1,40 @@
+[workspace]
+members = [
+    "package",
+]
+
+[package]
+name = "scie-pikesquares"
+description = "Protects your PikeSquares from the elements."
+version = "0.10.6"
+edition = "2021"
+authors = [
+    "Philip Kalinsky <philip.kalinsky@eloquentbits.com>",
+]
+publish = false
+
+[profile.release]
+opt-level = "s"
+strip = "symbols"
+lto = "fat"
+codegen-units = 1
+
+[workspace.dependencies]
+anyhow = "1.0"
+log = "0.4"
+tempfile = "3.10"
+
+[dependencies]
+anyhow = { workspace = true}
+dirs = "5.0"
+env_logger = { version = "0.10", default-features = false }
+log = { workspace = true }
+logging_timer = "1.1"
+nix = { version = "0.27", features = ["process"] }
+serde = { version = "1.0", features = ["derive"] }
+tempfile = { workspace = true }
+toml = "0.8"
+uuid = { version = "1.6", features = ["v4"] }
+
+[target.'cfg(unix)'.dependencies]
+shell-quote = "0.3.1"

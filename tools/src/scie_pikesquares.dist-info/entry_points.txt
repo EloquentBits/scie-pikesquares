@@ -1,0 +1,6 @@
+[console_scripts]
+bootstrap-tools = scie_pikesquares.bootstrap_tools:main
+configure-pikesquares = scie_pikesquares.configure_pikesquares:main
+install-pikesquares = scie_pikesquares.install_pikesquares:main
+update-scie-pikesquares = scie_pikesquares.update_scie_pikesquares:main
+record-scie-pikesquares-info = scie_pikesquares.record_scie_pikesquares:main

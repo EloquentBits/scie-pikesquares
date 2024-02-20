@@ -1,0 +1,349 @@
+use std::env;
+use std::ffi::{OsStr, OsString};
+use std::fmt::Debug;
+use std::path::PathBuf;
+
+use anyhow::{anyhow, bail, Context, Result};
+use build_root::BuildRoot;
+use log::{info, trace};
+use logging_timer::{time, timer, Level};
+use uuid::Uuid;
+
+use crate::config::PikeSquaresConfig;
+
+mod build_root;
+mod config;
+
+const SCIE_PIKESQUARES_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+#[derive(Debug, Default)]
+struct Process {
+    exe: OsString,
+    args: Vec<OsString>,
+    env: Vec<(OsString, OsString)>,
+}
+
+impl Process {
+    #[cfg(windows)]
+    fn exec(self) -> Result<i32> {
+        use std::process::Command;
+
+        let exit_status = Command::new(&self.exe)
+            .args(&self.args)
+            .args(env::args().skip(1))
+            .envs(self.env.clone())
+            .spawn()?
+            .wait()
+            .with_context(|| format!("Failed to execute process: {self:#?}"))?;
+        Ok(exit_status
+            .code()
+            .unwrap_or_else(|| if exit_status.success() { 0 } else { 1 }))
+    }
+
+    #[cfg(unix)]
+    fn exec(self) -> Result<i32> {
+        use std::ffi::CString;
+        use std::os::unix::ffi::OsStringExt;
+
+        use nix::unistd::execv;
+
+        let c_exe = CString::new(self.exe.into_vec())
+            .context("Failed to convert executable to a C string.")?;
+
+        let mut c_args = vec![c_exe.clone()];
+        c_args.extend(
+            self.args
+                .into_iter()
+                .chain(env::args().skip(1).map(OsString::from))
+                .map(|arg| {
+                    CString::new(arg.into_vec())
+                        .context("Failed to convert argument to a C string.")
+                })
+                .collect::<Result<Vec<_>, _>>()?,
+        );
+
+        for (name, value) in self.env {
+            env::set_var(name, value);
+        }
+
+        execv(&c_exe, &c_args)
+            .map(|_| 0)
+            .context("Failed to exec process.")
+    }
+}
+
+fn env_version(env_var_name: &str) -> Result<Option<String>> {
+    let raw_version = env::var_os(env_var_name).unwrap_or(OsString::new());
+    if raw_version.len() == 0 {
+        // setting PIKESQUARES_VERSION= or PIKESQUARES_SHA= behaves the same as not setting them
+        Ok(None)
+    } else {
+        Ok(Some(raw_version.into_string().map_err(|raw| {
+            anyhow!("Failed to interpret {env_var_name} {raw:?} as UTF-8 string.")
+        })?))
+    }
+}
+
+fn find_pikesquares_installation() -> Result<Option<PikeSquaresConfig>> {
+    if let Ok(build_root) = BuildRoot::find(None) {
+        let pikesquares_config = PikeSquaresConfig::parse(build_root)?;
+        return Ok(Some(pikesquares_config));
+    }
+    Ok(None)
+}
+
+#[derive(Eq, PartialEq)]
+enum ScieBoot {
+    BootstrapTools,
+    PikeSquares,
+    PikeSquaresDebug,
+}
+
+impl ScieBoot {
+    fn env_value(&self) -> OsString {
+        match self {
+            ScieBoot::BootstrapTools => "bootstrap-tools",
+            ScieBoot::PikeSquares => "pikesquares",
+            ScieBoot::PikeSquaresDebug => "pikesquares-debug",
+        }
+        .into()
+    }
+
+    #[cfg(unix)]
+    fn quote<T: Into<OsString> + Debug>(value: T) -> Result<String> {
+        String::from_utf8(shell_quote::bash::escape(value))
+            .context("Shell-quoted value could not be interpreted as UTF-8.")
+    }
+
+    #[cfg(windows)]
+    fn quote<T: Into<OsString> + Debug>(_value: T) -> Result<String> {
+        // The shell_quote crate assumes unix and fails to compile on Windows.
+        todo!("TODO(John Sirois): Figure out Git bash? shell quoting for Windows WTF-16 strings.")
+    }
+
+    fn into_process(
+        self,
+        scie: String,
+        build_root: Option<PathBuf>,
+        env: Vec<(OsString, OsString)>,
+    ) -> Result<Process> {
+        Ok(match build_root.map(|br| br.join(".pikesquares.bootstrap")) {
+            Some(pikesquares_bootstrap) if self != Self::BootstrapTools && pikesquares_bootstrap.is_file() => {
+                Process {
+                    exe: "/usr/bin/env".into(),
+                    args: vec![
+                        "bash".into(),
+                        "-c".into(),
+                        format!(
+                            r#"set -eou pipefail; source {bootstrap}; exec {scie} "$0" "$@""#,
+                            bootstrap = Self::quote(pikesquares_bootstrap)?,
+                            scie = Self::quote(scie)?
+                        )
+                        .into(),
+                    ],
+                    env,
+                }
+            }
+            _ => Process {
+                exe: scie.into(),
+                env,
+                ..Default::default()
+            },
+        })
+    }
+}
+
+#[time("debug", "scie-pikesquares::{}")]
+fn get_pikesquares_process() -> Result<Process> {
+    let pikesquares_installation = find_pikesquares_installation()?;
+    let (build_root, configured_pikesquares_version, debugpy_version, delegate_bootstrap) =
+        if let Some(ref pikesquares_config) = pikesquares_installation {
+            (
+                Some(pikesquares_config.build_root().to_path_buf()),
+                pikesquares_config.package_version(),
+                pikesquares_config.debugpy_version(),
+                pikesquares_config.delegate_bootstrap(),
+            )
+        } else {
+            (None, None, None, false)
+        };
+
+    let env_pikesquares_sha = env_version("PIKESQUARES_SHA")?;
+    let env_pikesquares_version = env_version("PIKESQUARES_VERSION")?;
+    if let Some(pikesquares_sha) = &env_pikesquares_sha {
+        // when support for PIKESQUARES_SHA is fully removed, PIKESQUARES_SHA_FIND_LINKS can be removed too
+        eprintln!(
+          "\
+DEPRECATED: Support for PIKESQUARES_SHA=... will be removed in a future version of the `pikesquares` launcher.
+
+The artifacts for PIKESQUARES_SHA are no longer published for new commits. This invocation set PIKESQUARES_SHA={pikesquares_sha}.
+
+To resolve, do one of:
+- Use a released version of Pants.
+- Run pants from sources (for example: `PANTS_SOURCE=/path/to/pants-checkout pants ...`).
+- If these are not appropriate, let us know what you're using it for: <https://www.pantsbuild.org/docs/getting-help>.
+"
+        );
+
+        if let Some(pikesquares_version) = &env_pikesquares_version {
+            bail!(
+                "Both PIKESQUARES_SHA={pikesquares_sha} and PIKESQUARES_VERSION={pikesquares_version} were set. \
+                Please choose one.",
+            )
+        }
+    }
+
+    let pikesquares_version = if let Some(env_version) = env_pikesquares_version {
+        Some(env_version)
+    } else if env_pikesquares_sha.is_none() {
+        configured_pikesquares_version.clone()
+    } else {
+        None
+    };
+
+    if delegate_bootstrap && pikesquares_version.is_none() {
+        let exe = build_root
+            .expect("Failed to locate build root")
+            .join("pikesquares")
+            .into_os_string();
+        return Ok(Process {
+            exe,
+            ..Default::default()
+        });
+    }
+
+    info!("Found PikeSquares build root at {build_root:?}");
+    info!("The required PikeSquares version is {pikesquares_version:?}");
+
+    let scie =
+        env::var("SCIE").context("Failed to retrieve SCIE location from the environment.")?;
+
+    let pikesquares_debug = matches!(env::var_os("PIKESQUARES_DEBUG"), Some(value) if !value.is_empty());
+    let scie_boot = match env::var_os("PIKESQUARES_BOOTSTRAP_TOOLS") {
+        Some(_) => ScieBoot::BootstrapTools,
+        None if pikesquares_debug => ScieBoot::PikeSquaresDebug,
+        None => ScieBoot::PikeSquares,
+    };
+
+    let pikesquares_bin_name = env::var_os("PIKESQUARES_BIN_NAME")
+        .or_else(|| env::var_os("SCIE_ARGV0"))
+        .unwrap_or_else(|| scie.clone().into());
+
+    let mut env = vec![
+        ("SCIE_BOOT".into(), scie_boot.env_value()),
+        ("PIKESQUARES_BIN_NAME".into(), pikesquares_bin_name),
+        (
+            "PIKESQUARES_DEBUG".into(),
+            if pikesquares_debug { "1" } else { "" }.into(),
+        ),
+        ("SCIE_PIKESQUARES_VERSION".into(), SCIE_PIKESQUARES_VERSION.into()),
+    ];
+    if let Some(debugpy_version) = debugpy_version {
+        env.push(("PIKESQUARES_DEBUGPY_VERSION".into(), debugpy_version.into()));
+    }
+    if let Some(ref build_root) = build_root {
+        env.push((
+            "PIKESQUARES_BUILDROOT_OVERRIDE".into(),
+            build_root.as_os_str().to_os_string(),
+        ));
+        // This should not be conditional. Ideally we'd always set this env var, which is used
+        // by the configure binding, and scie-jump would be smart enough to skip the configure
+        // binding when the install binding is a cache hit.
+        if configured_pikesquares_version.is_none() {
+            env.push((
+                "PIKESQUARES_TOML".into(),
+                build_root.join("pikesquares.toml").into_os_string(),
+            ));
+        }
+    }
+    if let Some(version) = pikesquares_version {
+        if delegate_bootstrap {
+            env.push(("_PIKESQUARES_VERSION_OVERRIDE".into(), version.clone().into()));
+        }
+        env.push(("PIKESQUARES_VERSION".into(), version.into()));
+    } else if env_pikesquares_sha.is_none() {
+        // Ensure the install binding always re-runs when no PikeSquares version is found so that the
+        // the user can be prompted with configuration options.
+        env.push((
+            "PIKESQUARES_VERSION_PROMPT_SALT".into(),
+            Uuid::new_v4().simple().to_string().into(),
+        ))
+    }
+
+    scie_boot.into_process(scie, build_root, env)
+}
+
+fn get_pikesquares_from_sources_process(pikesquares_repo_location: PathBuf) -> Result<Process> {
+    let exe = pikesquares_repo_location.join("pikesquares").into_os_string();
+
+    let args = vec!["--no-verify-config".into()];
+
+    let version = std::fs::read_to_string(
+        pikesquares_repo_location
+            .join("src")
+            .join("python")
+            .join("pikesquares")
+            .join("VERSION"),
+    )?;
+
+    // The ENABLE_PANTSD env var is a custom env var defined by the legacy `./pants_from_sources`
+    // script. We maintain support here in perpetuity because it's cheap and we don't break folks'
+    // workflows.
+    let enable_pantsd = env::var_os("ENABLE_PANTSD")
+        .or_else(|| env::var_os("PANTS_PANTSD"))
+        .unwrap_or_else(|| "false".into());
+
+    let build_root = BuildRoot::find(None)?;
+    let env = vec![
+        ("PIKESQUARES_VERSION".into(), version.trim().into()),
+        ("PANTS_PANTSD".into(), enable_pantsd),
+        (
+            "PANTS_BUILDROOT_OVERRIDE".into(),
+            build_root.as_os_str().to_os_string(),
+        ),
+        ("no_proxy".into(), "*".into()),
+        ("SCIE_PIKESQUARES_VERSION".into(), SCIE_PIKESQUARES_VERSION.into()),
+    ];
+
+    Ok(Process { exe, args, env })
+}
+
+fn invoked_as_basename() -> Option<String> {
+    let scie = env::var("SCIE_ARGV0").ok()?;
+    let exe_path = PathBuf::from(scie);
+
+    #[cfg(windows)]
+    let basename = exe_path.file_stem().and_then(OsStr::to_str);
+
+    #[cfg(unix)]
+    let basename = exe_path.file_name().and_then(OsStr::to_str);
+
+    basename.map(str::to_owned)
+}
+
+fn main() -> Result<()> {
+    env_logger::init();
+    let _timer = timer!(Level::Debug; "MAIN");
+
+    // N.B.: The bogus version of `report` is used to signal scie-pikesquares should report version
+    // information for the update tool to use in determining if there are newer versions of
+    // scie-pikesquares available.
+    if let Ok(value) = env::var("PIKESQUARES_BOOTSTRAP_VERSION") {
+        if "report" == value.as_str() {
+            println!("{}", SCIE_PIKESQUARES_VERSION);
+            std::process::exit(0);
+        }
+    }
+
+    let pikesquares_process = if let Ok(value) = env::var("PIKESQUARES_SOURCE") {
+        get_pikesquares_from_sources_process(PathBuf::from(value))
+    } else if let Some("pikesquares_from_sources") = invoked_as_basename().as_deref() {
+        get_pikesquares_from_sources_process(PathBuf::from("..").join("pikesquares"))
+    } else {
+        get_pikesquares_process()
+    }?;
+
+    trace!("Launching: {pikesquares_process:#?}");
+    let exit_code = pikesquares_process.exec()?;
+    std::process::exit(exit_code)
+}

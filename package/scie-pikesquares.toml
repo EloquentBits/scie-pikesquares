@@ -1,0 +1,239 @@
+[lift]
+name = "scie-pikesquares"
+description = "Isolates your PikeSquares from the elements."
+load_dotenv = true
+
+[lift.app_info]
+repo = "https://github.com/eloquentbits/scie-pikesquares"
+
+[lift.ptex]
+id = "ptex"
+version = "0.7.0"
+argv1 = "{scie.env.PIKESQUARES_BOOTSTRAP_URLS={scie.lift}}"
+
+[lift.scie_jump]
+version = "0.14.0"
+
+[[lift.interpreters]]
+id = "cpython312"
+provider = "PythonBuildStandalone"
+release = "20240107"
+lazy = true
+version = "3.12.1"
+
+[[lift.interpreters]]
+id = "cpython39"
+provider = "PythonBuildStandalone"
+release = "20240107"
+lazy = true
+version = "3.9.18"
+
+[[lift.interpreter_groups]]
+id = "cpython"
+selector = "{scie.bindings.configure:PYTHON}"
+members = [
+    "cpython39",
+    "cpython312",
+]
+
+
+
+
+[[lift.files]]
+# N.B.: We name the scie-pikesquares binary scie-pikesquares.bin since the scie itself is named scie-pikesquares
+# which would conflict when packaging.
+name = "scie-pikesquares.bin"
+
+[[lift.files]]
+name = "tools.pex"
+
+# Boot
+[[lift.commands]]
+description = "Detects the current PikeSquares installation and launches it."
+exe = "{scie-pikesquares.bin}"
+
+# Run PikeSquares
+[[lift.commands]]
+name = "pikesquares"
+# No description because this command shouldn't render in the help output (it's invoked as
+# appropriate by the default "Boot" one above)
+# description = "Runs a hermetic PikeSquares installation."
+exe = "{scie.bindings.install:PIKESQUARES_CLIENT_EXE}"
+args = [
+    "{scie.bindings.configure:PIKESQUARES_SHA_FIND_LINKS}",
+]
+
+[lift.commands.env.default]
+PIKESQUARES_BUILDROOT_OVERRIDE = "{scie.bindings.configure:PIKESQUARES_BUILDROOT_OVERRIDE}"
+
+[lift.commands.env.replace]
+PIKESQUARES_VERSION = "{scie.bindings.configure:PIKESQUARES_VERSION}"
+_PIKESQUARES_SERVER_EXE = "{scie.bindings.install:PIKESQARES_SERVER_EXE}"
+
+# Run PikeSquares Debug Mode
+[[lift.commands]]
+name = "pikesquares-debug"
+# No description because this command shouldn't render in the help output (it's invoked as
+# appropriate by the default "Boot" one above)
+# description = "Runs a hermetic PikeSquares installation with a debug server for debugging PikeSquares code."
+exe = "{scie.bindings.install:VIRTUAL_ENV}/bin/python"
+args = [
+    "-c",
+    """\
+sys = __import__("sys")
+sys.path.pop(0)
+print(
+    "Launching debugpy server at '127.0.0.1:5678' and waiting for client connection.",
+    file=sys.stderr
+)
+del sys
+__import__("debugpy.server.cli").server.cli.main()
+""",
+    "--listen",
+    "127.0.0.1:5678",
+    "--wait-for-client",
+    "{scie.bindings.install:VIRTUAL_ENV}/bin/pikesquares",
+    "{scie.bindings.configure:PIKESQUARES_SHA_FIND_LINKS}",
+]
+
+[lift.commands.env.default]
+PIKESQUARES_BUILDROOT_OVERRIDE = "{scie.bindings.configure:PIKESQUARES_BUILDROOT_OVERRIDE}"
+
+[lift.commands.env.replace]
+PIKESQUARES_VERSION = "{scie.bindings.configure:PIKESQUARES_VERSION}"
+
+
+# Bootstrap Tools
+[[lift.commands]]
+name = "bootstrap-tools"
+description = "Introspection tools for the PikeSquares bootstrap process."
+exe = "#{cpython:python}"
+args = [
+    "{tools.pex}",
+    "bootstrap-tools",
+    "--python-distribution-hash",
+    "{scie.files:hash.#{cpython}}",
+    "--pikesquares-version",
+    "{scie.bindings.configure:PIKESQUARES_VERSION}",
+]
+env.remove_re = [
+    "PEX_.*",
+]
+
+[lift.commands.env.replace]
+PEX_ROOT = "{scie.bindings}/pex_root"
+PEX_PYTHON_PATH = "#{cpython:python}"
+
+# Self Update
+[[lift.commands]]
+name = "update"
+description = "Update scie-pikesquares."
+exe = "#{cpython312:python}"
+args = [
+    "{tools.pex}",
+    "update-scie-pikesquares",
+    "--ptex-path",
+    "{ptex}",
+    "--platform",
+    "{scie.platform}",
+    "--base-dir",
+    "{scie.bindings}",
+    "--scie",
+    "{scie}",
+    "--current-version",
+    "{scie.bindings.scie-pikesquares-info:VERSION}",
+    "--github-api-bearer-token",
+    "{scie.env.PIKESQUARES_BOOTSTRAP_GITHUB_API_BEARER_TOKEN}",
+]
+env.remove_re = [
+    "PEX_.*",
+]
+
+[lift.commands.env.replace]
+PEX_ROOT = "{scie.bindings}/pex_root"
+PEX_PYTHON_PATH = "#{cpython312:python}"
+
+# Self Info
+[[lift.bindings]]
+name = "scie-pikesquares-info"
+description = "Records information about the current scie-pikesquares binary."
+exe = "#{cpython312:python}"
+args = [
+    "{tools.pex}",
+    "record-scie-pikesquares-info",
+    "--base-dir",
+    "{scie.bindings}",
+    "--scie",
+    "{scie}",
+]
+env.remove_re = [
+    "PEX_.*",
+]
+
+[lift.bindings.env.replace]
+PEX_ROOT = "{scie.bindings}/pex_root"
+PEX_PYTHON_PATH = "#{cpython312:python}"
+
+# Configure PikeSquares
+[[lift.bindings]]
+name = "configure"
+description = "Prompts the user for missing PikeSquares configuration if needed."
+exe = "#{cpython312:python}"
+args = [
+    "{tools.pex}",
+    "configure-pikesquares",
+    "--ptex-path",
+    "{ptex}",
+    "--pikesquares-version",
+    "{scie.env.PIKESQUARES_VERSION}",
+    "--pikesquares-sha",
+    "{scie.env.PIKESQUARES_SHA}",
+    "--pikesquares-config",
+    "{scie.env.PIKESQUARES_TOML}",
+    "--github-api-bearer-token",
+    "{scie.env.PIKESQUARES_BOOTSTRAP_GITHUB_API_BEARER_TOKEN}",
+    "{scie.bindings}",
+]
+env.remove_re = [
+    "PEX_.*",
+]
+
+[lift.bindings.env.default]
+PIKESQUARES_VERSION_PROMPT_SALT = "{scie.env.PIKESQUARES_VERSION_PROMPT_SALT}"
+
+[lift.bindings.env.replace]
+PEX_ROOT = "{scie.bindings}/pex_root"
+PEX_PYTHON_PATH = "#{cpython312:python}"
+
+# Install PikeSquares
+[[lift.bindings]]
+name = "install"
+description = """\
+Installs a hermetic PikeSquares environment from PyPI or a GitHub release \
+with optional debug support.\
+"""
+exe = "#{cpython:python}"
+args = [
+    "{tools.pex}",
+    "install-pikesquares",
+    "--pikesquares-version",
+    "{scie.bindings.configure:PIKESQUARES_VERSION}",
+    "--find-links",
+    "{scie.bindings.configure:FIND_LINKS}",
+    "--debug",
+    "{scie.env.PIKESQUARES_DEBUG}",
+    "--debugpy-requirement",
+    "{scie.env.PIKESQUARES_DEBUGPY_VERSION}",
+    "--pikesquares-bootstrap-urls",
+    "{scie.env.PIKESQUARES_BOOTSTRAP_URLS}",
+    "--ptex-path",
+    "{ptex}",
+    "{scie.bindings}",
+]
+env.remove_re = [
+    "PEX_.*",
+]
+
+[lift.bindings.env.replace]
+PEX_ROOT = "{scie.bindings}/pex_root"
+PEX_PYTHON_PATH = "#{cpython:python}"
