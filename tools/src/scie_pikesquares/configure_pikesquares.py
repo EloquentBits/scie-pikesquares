@@ -13,7 +13,6 @@ from packaging.version import Version
 from scie_pikesquares.log import fatal, info, init_logging, warn
 from scie_pikesquares.pikesquares_version import (
     determine_latest_stable_version,
-    determine_sha_version,
     determine_tag_version,
 )
 from scie_pikesquares.ptex import Ptex
@@ -56,12 +55,7 @@ def prompt_for_pikesquares_config() -> Path | None:
 def main() -> NoReturn:
     parser = ArgumentParser()
     get_ptex = Ptex.add_options(parser)
-    parser.add_argument("--pikesquares-sha", help="The PikeSquares sha to install (trumps --version)")
     parser.add_argument("--pikesquares-version", help="The PikeSquares version to install")
-    parser.add_argument("--pikesquares-config", help="The path of the pikesquares.toml file")
-    parser.add_argument(
-        "--github-api-bearer-token", help="The GITHUB_TOKEN to use if running in CI context."
-    )
     parser.add_argument("base_dir", nargs=1, help="The base directory to create PikeSquares venvs in.")
     options = parser.parse_args()
 
@@ -69,63 +63,28 @@ def main() -> NoReturn:
     init_logging(base_dir=base_dir, log_name="configure")
 
     env_file = os.environ.get("SCIE_BINDING_ENV")
+
     if not env_file:
         fatal("Expected SCIE_BINDING_ENV to be set in the environment")
 
     ptex = get_ptex(options)
 
-    find_links_dir = base_dir / "find_links"
-
-    finalizers = []
-    newly_created_build_root = None
-    pikesquares_config = Path(options.pikesquares_config) if options.pikesquares_config else None
-    if options.pikesquares_sha:
-        resolve_info = determine_sha_version(
-            ptex=ptex, sha=options.pikesquares_sha, find_links_dir=find_links_dir
-        )
-        assert resolve_info.sha_version is not None
-        version = resolve_info.sha_version
-    elif options.pikesquares_version:
+    if options.pikesquares_version:
         resolve_info = determine_tag_version(
-            ptex=ptex,
             pikesquares_version=options.pikesquares_version,
-            find_links_dir=find_links_dir,
-            github_api_bearer_token=options.github_api_bearer_token,
         )
         version = resolve_info.stable_version
     else:
-        if pikesquares_config:
-            if not prompt_for_pikesquares_version(options.pikesquares_config):
-                sys.exit(1)
-        else:
-            maybe_pikesquares_config = prompt_for_pikesquares_config()
-            if not maybe_pikesquares_config:
-                sys.exit(1)
-            pikesquares_config = maybe_pikesquares_config
-            newly_created_build_root = pikesquares_config.parent
-
-        configure_version, resolve_info = determine_latest_stable_version(
+        resolve_info = determine_latest_stable_version(
             ptex=ptex,
-            pikesquares_config=pikesquares_config,
-            find_links_dir=find_links_dir,
-            github_api_bearer_token=options.github_api_bearer_token,
         )
-        finalizers.append(configure_version)
         version = resolve_info.stable_version
 
     python = "cpython312"
 
-    for finalizer in finalizers:
-        finalizer()
+    print(f"writing to env file {env_file}")
 
     with open(env_file, "a") as fp:
-        if resolve_info.find_links:
-            print(f"FIND_LINKS={resolve_info.find_links}", file=fp)
-        # This can be removed once we stop supporting PIKESQUARES_SHA:
-        # NB. this is added unconditionally because it gets set as an argument
-        #print(f"PIKESQUARES_SHA_FIND_LINKS={resolve_info.pikesquares_find_links_option(version)}", file=fp)
-        if newly_created_build_root:
-            print(f"PIKESQUARES_BUILDROOT_OVERRIDE={newly_created_build_root}", file=fp)
         print(f"PIKESQUARES_VERSION={version}", file=fp)
         print(f"PYTHON={python}", file=fp)
 
