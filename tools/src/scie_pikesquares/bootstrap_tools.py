@@ -33,9 +33,6 @@ def versioned(func) -> Callable:
                 f"PIKESQUARES_BOOTSTRAP_TOOLS={expected_version}).\n"
                 f"Please update it by following {INSTALL_URL}"
             )
-        print(f"{func=}")
-        print(f"{args=}")
-        print(f"{kwargs=}")
         func(*args, **kwargs)
 
     return wrapper
@@ -56,8 +53,6 @@ def bootstrap_cache_key(options: Namespace) -> None:
         f"python_distribution_hash={require('python_distribution_hash')}",
         f"pikesquares_version={require('pikesquares_version')}",
     ]
-    print(f"{cache_key}")
-    print(" ".join(cache_key))
 
 
 def main() -> NoReturn:
@@ -91,7 +86,7 @@ def main() -> NoReturn:
             "reusable CI formulae) that use these bootstrap tools should set PIKESQUARES_BOOTSTRAP_TOOLS "
             "to the minimum script version for the features they require. For example, if "
             "'some-tool' was added in version 123: "
-            "PIKESQUARES_BOOTSTRAP_TOOLS=123 ./pants some-tool (Added in bootstrap version 1.)"
+            "PIKESQUARES_BOOTSTRAP_TOOLS=123 ./pikesquares some-tool"
         ),
     )
     version_parser.set_defaults(func=lambda _: print(VERSION))
@@ -105,10 +100,7 @@ def main() -> NoReturn:
 
     options = parser.parse_args()
     subcommand = options.func
-    print(f"{subcommand=}")
-    print(f"{options=}")
     subcommand(options)
-    print("done calling command.")
 
     sys.exit(0)
 

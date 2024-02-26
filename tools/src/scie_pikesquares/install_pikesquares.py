@@ -40,7 +40,7 @@ def venv_pip_install(venv_dir: Path, *args: str, find_links: str | None) -> None
         check=True,
     )
 
-def install_pikesquares_from_pex(
+def install_from_pex(
     venv_dir: Path,
     prompt: str,
     version: Version,
@@ -55,7 +55,6 @@ def install_pikesquares_from_pex(
     # https://github.com/EloquentBits/pikesquares/releases/download/0.1.2/pikesquares-macos-arm64.pex
     # https://github.com/EloquentBits/pikesquares/releases/download/0.1.2/pikesquares-macos-x86_64.pex
 
-    print(f"{pex_name=}")
     pex_url = f"https://github.com/EloquentBits/pikesquares/releases/download/{version}/{pex_name}"
 
     with tempfile.NamedTemporaryFile(suffix=".pex") as pikesquares_pex:
@@ -121,7 +120,7 @@ def main() -> NoReturn:
     info(
         f"Installing {' '.join(pikesquares_requirements)} into a virtual environment at {venv_dir}"
     )
-    install_pikesquares_from_pex(
+    install_from_pex(
         venv_dir=venv_dir,
         prompt=prompt,
         version=version,

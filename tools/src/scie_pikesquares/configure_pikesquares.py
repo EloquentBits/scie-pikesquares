@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import os
-import shutil
-import subprocess
+import pwd
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
 from typing import NoReturn
 
-from packaging.version import Version
+from platformdirs import (
+    user_data_dir, 
+    user_runtime_dir,
+    user_config_dir,
+    user_log_dir,
+)
 
 from scie_pikesquares.log import fatal, info, init_logging, warn
 from scie_pikesquares.pikesquares_version import (
@@ -16,40 +20,6 @@ from scie_pikesquares.pikesquares_version import (
     determine_tag_version,
 )
 from scie_pikesquares.ptex import Ptex
-
-
-def prompt(message: str, default: bool) -> bool:
-    raw_answer = input(f"{message} ({'Y/n' if default else 'N/y'}): ")
-    answer = raw_answer.strip().lower()
-    if not answer:
-        return default
-    return answer in ("y", "yes")
-
-
-def prompt_for_pikesquares_version(pikesquares_config: Path) -> bool:
-    warn(
-        f"The `pikesquares.toml` at {pikesquares_config} has no `pikesquares_version` configured in the `GLOBAL` "
-        f"section."
-    )
-    return prompt(f"Would you like set `pikesquares_version` to the latest stable release?", default=True)
-
-
-def prompt_for_pikesquares_config() -> Path | None:
-    cwd = os.getcwd()
-    buildroot = Path(cwd)
-    if shutil.which("git"):
-        result = subprocess.run(
-            args=["git", "rev-parse", "--show-toplevel"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-        )
-        if result.returncode == 0:
-            buildroot = Path(os.fsdecode(result.stdout.strip()))
-
-    info(f"No PikeSquares configuration was found at or above {cwd}.")
-    if prompt(f"Would you like to configure {buildroot} as a PikeSquares project?", default=True):
-        return buildroot / "pikesquares.toml"
-    return None
 
 
 def main() -> NoReturn:
@@ -81,12 +51,22 @@ def main() -> NoReturn:
         version = resolve_info.stable_version
 
     python = "cpython312"
-
-    print(f"writing to env file {env_file}")
+    current_user: str = pwd.getpwuid(os.getuid()).pw_name
+    APP_NAME = "pikesquares"
+    DATA_DIR = Path(user_data_dir(APP_NAME, current_user))
 
     with open(env_file, "a") as fp:
         print(f"PIKESQUARES_VERSION={version}", file=fp)
         print(f"PYTHON={python}", file=fp)
+        print(f"RUN_AS_UID={os.getuid()}", file=fp)
+        print(f"RUN_AS_GID={os.getgid()}", file=fp)
+        print(f"DATA_DIR={DATA_DIR}", file=fp)
+        print(f"RUN_DIR={str(Path(user_runtime_dir(APP_NAME, current_user)).resolve())}", file=fp)
+        print(f"LOG_DIR={str(Path(user_log_dir(APP_NAME, current_user)).resolve())}", file=fp)
+        print(f"CONFIG_DIR={str(Path(user_config_dir(APP_NAME, current_user)).resolve())}", file=fp)
+        print(f"PLUGINS_DIR={DATA_DIR / 'plugins'}", file=fp)
+        print(f"EMPEROR_ZMQ_ADDRESS=127.0.0.1:5250", file=fp)
+        print(f"PKI_DIR={DATA_DIR / 'pki'}", file=fp)
 
     sys.exit(0)
 

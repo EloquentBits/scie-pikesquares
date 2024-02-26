@@ -180,7 +180,7 @@ The artifacts for PIKESQUARES_SHA are no longer published for new commits. This 
 
 To resolve, do one of:
 - Use a released version of Pants.
-- Run pants from sources (for example: `PANTS_SOURCE=/path/to/pants-checkout pants ...`).
+- Run pants from sources (for example: `PIKESQUARES_SOURCE=/path/to/pants-checkout pants ...`).
 - If these are not appropriate, let us know what you're using it for: <https://www.pantsbuild.org/docs/getting-help>.
 "
         );
@@ -281,24 +281,15 @@ fn get_pikesquares_from_sources_process(pikesquares_repo_location: PathBuf) -> R
     let version = std::fs::read_to_string(
         pikesquares_repo_location
             .join("src")
-            .join("python")
             .join("pikesquares")
             .join("VERSION"),
     )?;
 
-    // The ENABLE_PANTSD env var is a custom env var defined by the legacy `./pants_from_sources`
-    // script. We maintain support here in perpetuity because it's cheap and we don't break folks'
-    // workflows.
-    let enable_pantsd = env::var_os("ENABLE_PANTSD")
-        .or_else(|| env::var_os("PANTS_PANTSD"))
-        .unwrap_or_else(|| "false".into());
-
     let build_root = BuildRoot::find(None)?;
     let env = vec![
         ("PIKESQUARES_VERSION".into(), version.trim().into()),
-        ("PANTS_PANTSD".into(), enable_pantsd),
         (
-            "PANTS_BUILDROOT_OVERRIDE".into(),
+            "PIKESQUARES_BUILDROOT_OVERRIDE".into(),
             build_root.as_os_str().to_os_string(),
         ),
         ("no_proxy".into(), "*".into()),

@@ -17,9 +17,9 @@ version = "0.14.0"
 [[lift.interpreters]]
 id = "cpython312"
 provider = "PythonBuildStandalone"
-release = "20240107"
+release = "20240224"
 lazy = true
-version = "3.12.1"
+version = "3.12.2"
 
 [[lift.interpreters]]
 id = "cpython39"
@@ -60,12 +60,15 @@ exe = "{scie.bindings.install:PIKESQUARES_SERVER_EXE}"
   #"{scie.bindings.configure:PIKESQUARES_SHA_FIND_LINKS}",
 #]
 
-#[lift.commands.env.default]
+[lift.commands.env.default]
 #PIKESQUARES_BUILDROOT_OVERRIDE = "{scie.bindings.configure:PIKESQUARES_BUILDROOT_OVERRIDE}"
+PIKESQUARES_SCIE_BINDINGS = "{scie.bindings}"
 
 [lift.commands.env.replace]
 PIKESQUARES_VERSION = "{scie.bindings.configure:PIKESQUARES_VERSION}"
 _PIKESQUARES_SERVER_EXE = "{scie.bindings.install:PIKESQARES_SERVER_EXE}"
+PEX_ROOT = "{scie.bindings}/pex_root"
+PEX_PYTHON_PATH = "#{cpython312:python}"
 
 # Bootstrap Tools
 [[lift.commands]]
@@ -85,6 +88,59 @@ env.remove_re = [
 ]
 
 [lift.commands.env.replace]
+PEX_ROOT = "{scie.bindings}/pex_root"
+PEX_PYTHON_PATH = "#{cpython:python}"
+
+# Configure PikeSquares
+[[lift.bindings]]
+name = "configure"
+description = "Configure PikeSquares"
+exe = "#{cpython312:python}"
+args = [
+    "{tools.pex}",
+    "configure-pikesquares",
+    "--ptex-path",
+    "{ptex}",
+    "--pikesquares-version",
+    "{scie.env.PIKESQUARES_VERSION}",
+    "{scie.bindings}",
+]
+env.remove_re = [
+    "PEX_.*",
+]
+
+[lift.bindings.env.default]
+PIKESQUARES_VERSION_PROMPT_SALT = "{scie.env.PIKESQUARES_VERSION_PROMPT_SALT}"
+
+[lift.bindings.env.replace]
+PEX_ROOT = "{scie.bindings}/pex_root"
+PEX_PYTHON_PATH = "#{cpython312:python}"
+
+# Install PikeSquares
+[[lift.bindings]]
+name = "install"
+description = """\
+Installs a hermetic PikeSquares environment from a GitHub release \
+"""
+exe = "#{cpython:python}"
+args = [
+    "{tools.pex}",
+    "install-pikesquares",
+    "--pikesquares-version",
+    "{scie.bindings.configure:PIKESQUARES_VERSION}",
+    "--find-links",
+    "{scie.bindings.configure:FIND_LINKS}",
+    "--pikesquares-bootstrap-urls",
+    "{scie.env.PIKESQUARES_BOOTSTRAP_URLS}",
+    "--ptex-path",
+    "{ptex}",
+    "{scie.bindings}",
+]
+env.remove_re = [
+    "PEX_.*",
+]
+
+[lift.bindings.env.replace]
 PEX_ROOT = "{scie.bindings}/pex_root"
 PEX_PYTHON_PATH = "#{cpython:python}"
 
@@ -138,55 +194,3 @@ env.remove_re = [
 PEX_ROOT = "{scie.bindings}/pex_root"
 PEX_PYTHON_PATH = "#{cpython312:python}"
 
-# Configure PikeSquares
-[[lift.bindings]]
-name = "configure"
-description = "Prompts the user for missing PikeSquares configuration if needed."
-exe = "#{cpython312:python}"
-args = [
-    "{tools.pex}",
-    "configure-pikesquares",
-    "--ptex-path",
-    "{ptex}",
-    "--pikesquares-version",
-    "{scie.env.PIKESQUARES_VERSION}",
-    "{scie.bindings}",
-]
-env.remove_re = [
-    "PEX_.*",
-]
-
-[lift.bindings.env.default]
-PIKESQUARES_VERSION_PROMPT_SALT = "{scie.env.PIKESQUARES_VERSION_PROMPT_SALT}"
-
-[lift.bindings.env.replace]
-PEX_ROOT = "{scie.bindings}/pex_root"
-PEX_PYTHON_PATH = "#{cpython312:python}"
-
-# Install PikeSquares
-[[lift.bindings]]
-name = "install"
-description = """\
-Installs a hermetic PikeSquares environment from a GitHub release \
-"""
-exe = "#{cpython:python}"
-args = [
-    "{tools.pex}",
-    "install-pikesquares",
-    "--pikesquares-version",
-    "{scie.bindings.configure:PIKESQUARES_VERSION}",
-    "--find-links",
-    "{scie.bindings.configure:FIND_LINKS}",
-    "--pikesquares-bootstrap-urls",
-    "{scie.env.PIKESQUARES_BOOTSTRAP_URLS}",
-    "--ptex-path",
-    "{ptex}",
-    "{scie.bindings}",
-]
-env.remove_re = [
-    "PEX_.*",
-]
-
-[lift.bindings.env.replace]
-PEX_ROOT = "{scie.bindings}/pex_root"
-PEX_PYTHON_PATH = "#{cpython:python}"

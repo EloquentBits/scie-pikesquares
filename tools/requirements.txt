@@ -2,4 +2,5 @@ setuptools
 ansicolors
 conscript
 packaging
+platformdirs
 tomlkit
