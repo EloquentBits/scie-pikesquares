@@ -7,6 +7,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import NoReturn
 
+from tinydb import TinyDB, Query
 from platformdirs import (
     user_data_dir, 
     user_runtime_dir,
@@ -56,17 +57,30 @@ def main() -> NoReturn:
     DATA_DIR = Path(user_data_dir(APP_NAME, current_user))
 
     with open(env_file, "a") as fp:
+        #print(f"PIKESQUARES_BUILDROOT_OVERRIDE=/home/pk/eqb/pikesquares", file=fp)
         print(f"PIKESQUARES_VERSION={version}", file=fp)
         print(f"PYTHON={python}", file=fp)
-        print(f"RUN_AS_UID={os.getuid()}", file=fp)
-        print(f"RUN_AS_GID={os.getgid()}", file=fp)
-        print(f"DATA_DIR={DATA_DIR}", file=fp)
-        print(f"RUN_DIR={str(Path(user_runtime_dir(APP_NAME, current_user)).resolve())}", file=fp)
-        print(f"LOG_DIR={str(Path(user_log_dir(APP_NAME, current_user)).resolve())}", file=fp)
-        print(f"CONFIG_DIR={str(Path(user_config_dir(APP_NAME, current_user)).resolve())}", file=fp)
-        print(f"PLUGINS_DIR={DATA_DIR / 'plugins'}", file=fp)
-        print(f"EMPEROR_ZMQ_ADDRESS=127.0.0.1:5250", file=fp)
-        print(f"PKI_DIR={DATA_DIR / 'pki'}", file=fp)
+
+    with TinyDB(DATA_DIR / 'device-db.json') as db:
+        conf_db = db.table('configs')
+        conf_db.upsert(
+            {
+                "RUN_AS_UID": os.getuid(),
+                "RUN_AS_GID": os.getgid(),
+                "DATA_DIR": str(DATA_DIR),
+                "RUN_DIR": str(Path(user_runtime_dir(APP_NAME, current_user))),
+                "LOG_DIR": str(Path(user_log_dir(APP_NAME, current_user))),
+                "CONFIG_DIR": str(Path(user_config_dir(APP_NAME, current_user))),
+                "PLUGINS_DIR": str(DATA_DIR / 'plugins'),
+                "EMPEROR_ZMQ_ADDRESS": "127.0.0.1:5250",
+                "PKI_DIR": str(DATA_DIR / 'pki'),
+                "version": str(version),
+            }, 
+            Query().version == str(version),
+        )
+        print(f"wrote conf to tinydb. ")
+
+    #Path(v).mkdir(mode=0o777, parents=True, exist_ok=True)
 
     sys.exit(0)
 

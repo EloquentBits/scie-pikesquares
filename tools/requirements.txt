@@ -3,4 +3,5 @@ ansicolors
 conscript
 packaging
 platformdirs
+tinydb
 tomlkit

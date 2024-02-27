@@ -327,6 +327,7 @@ fn main() -> Result<()> {
     }
 
     let pikesquares_process = if let Ok(value) = env::var("PIKESQUARES_SOURCE") {
+        // println!("{}", SCIE_PIKESQUARES_VERSION);
         get_pikesquares_from_sources_process(PathBuf::from(value))
     } else if let Some("pikesquares_from_sources") = invoked_as_basename().as_deref() {
         get_pikesquares_from_sources_process(PathBuf::from("..").join("pikesquares"))

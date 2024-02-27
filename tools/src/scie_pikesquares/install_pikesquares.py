@@ -1,18 +1,21 @@
 from __future__ import annotations
 
-import json
+#import json
 import logging
 import os
-import stat
+import pwd
+#import stat
 import subprocess
 import sys
 import tempfile
 from argparse import ArgumentParser
-from glob import glob
+#from glob import glob
 from pathlib import Path
 from typing import Iterable, NoReturn
 
+from tinydb import TinyDB, Query
 from packaging.version import Version
+from platformdirs import user_data_dir
 
 from scie_pikesquares.log import debug, fatal, info, init_logging
 from scie_pikesquares.ptex import Ptex
@@ -40,7 +43,33 @@ def venv_pip_install(venv_dir: Path, *args: str, find_links: str | None) -> None
         check=True,
     )
 
-def install_from_pex(
+def install_pants_from_req(
+    venv_dir: Path, prompt: str, pants_requirements: Iterable[str], find_links: str | None
+) -> None:
+    subprocess.run(
+        args=[
+            sys.executable,
+            "-m",
+            "venv",
+            "--clear",
+            "--prompt",
+            prompt,
+            str(venv_dir),
+        ],
+        check=True,
+    )
+
+    # Pin Pip to 22.3.1 (currently latest). The key semantic that should be preserved by the Pip
+    # we use is that --find-links are used as a fallback only and PyPI is preferred. This saves us
+    # money by avoiding fetching wheels from our S3 bucket at https://binaries.pantsbuild.org unless
+    # absolutely needed.
+    #
+    # Also, we don't advance setuptools past 58 which drops support for the `setup` kwarg `use_2to3`
+    # which Pants 1.x sdist dependencies (pystache) use.
+    venv_pip_install(venv_dir, "-U", "pip==22.3.1", "setuptools<58", "wheel", find_links=find_links)
+    venv_pip_install(venv_dir, "--progress-bar", "off", *pants_requirements, find_links=find_links)
+
+def install_pikesquares_from_pex(
     venv_dir: Path,
     prompt: str,
     version: Version,
@@ -94,6 +123,7 @@ def main() -> NoReturn:
         type=str,
         help="The path to the JSON file containing alternate URLs for downloaded artifacts.",
     )
+    parser.add_argument("--debug", type=bool, help="Install with debug capabilities.")
     parser.add_argument("base_dir", nargs=1, help="The base directory to create PikeSquares venvs in.")
     options = parser.parse_args()
 
@@ -120,7 +150,7 @@ def main() -> NoReturn:
     info(
         f"Installing {' '.join(pikesquares_requirements)} into a virtual environment at {venv_dir}"
     )
-    install_from_pex(
+    install_pikesquares_from_pex(
         venv_dir=venv_dir,
         prompt=prompt,
         version=version,
@@ -129,9 +159,22 @@ def main() -> NoReturn:
     info(f"New virtual environment successfully created at {venv_dir}.")
 
     pikesquares_server_exe = str(venv_dir / "bin" / "pikesquares")
+    current_user: str = pwd.getpwuid(os.getuid()).pw_name
+    pikesquares_data_dir = Path(user_data_dir("pikesquares", current_user))
     with open(env_file, "a") as fp:
         print(f"VIRTUAL_ENV={venv_dir}", file=fp)
         print(f"PIKESQUARES_SERVER_EXE={pikesquares_server_exe}", file=fp)
+        print(f"PIKESQUARES_DATA_DIR={pikesquares_data_dir}", file=fp)
+
+    with TinyDB(Path(pikesquares_data_dir) / "device-db.json") as db:
+        conf_db = db.table('configs')
+        conf_db.upsert(
+            {
+                'VIRTUAL_ENV': str(venv_dir),
+            },
+            Query().version == str(version),
+        )
+        print(f"wrote venv dir to config. {version=}")
 
     sys.exit(0)
 

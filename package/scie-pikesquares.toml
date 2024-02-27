@@ -61,12 +61,13 @@ exe = "{scie.bindings.install:PIKESQUARES_SERVER_EXE}"
 #]
 
 [lift.commands.env.default]
-#PIKESQUARES_BUILDROOT_OVERRIDE = "{scie.bindings.configure:PIKESQUARES_BUILDROOT_OVERRIDE}"
+PIKESQUARES_BUILDROOT_OVERRIDE = "{scie.bindings.configure:PIKESQUARES_BUILDROOT_OVERRIDE}"
 PIKESQUARES_SCIE_BINDINGS = "{scie.bindings}"
 
 [lift.commands.env.replace]
 PIKESQUARES_VERSION = "{scie.bindings.configure:PIKESQUARES_VERSION}"
 _PIKESQUARES_SERVER_EXE = "{scie.bindings.install:PIKESQARES_SERVER_EXE}"
+PIKESQUARES_DATA_DIR = "{scie.bindings.install:PIKESQUARES_DATA_DIR}"
 PEX_ROOT = "{scie.bindings}/pex_root"
 PEX_PYTHON_PATH = "#{cpython312:python}"
 
