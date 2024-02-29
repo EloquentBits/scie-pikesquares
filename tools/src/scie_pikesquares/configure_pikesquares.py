@@ -73,6 +73,7 @@ def main() -> NoReturn:
                 "CONFIG_DIR": str(Path(user_config_dir(APP_NAME, current_user))),
                 "PLUGINS_DIR": str(DATA_DIR / 'plugins'),
                 "EMPEROR_ZMQ_ADDRESS": "127.0.0.1:5250",
+                "EASYRSA_DIR": os.environ.get("PIKESQUARES_EASY_RSA_DIR"),
                 "PKI_DIR": str(DATA_DIR / 'pki'),
                 "version": str(version),
             }, 

@@ -44,6 +44,12 @@ name = "scie-pikesquares.bin"
 [[lift.files]]
 name = "tools.pex"
 
+[[lift.files]]
+name = "easyrsa"
+type = "tar.gz"
+digest = { size = 81373, fingerprint = "aaa48fadcbb77511b9c378554ef3eae09f8c7bc149d6f56ba209f1c9bab98c6e" }
+source = { url = "https://github.com/OpenVPN/easy-rsa/releases/download/v3.1.7/EasyRSA-3.1.7.tgz", lazy = true }
+
 # Boot
 [[lift.commands]]
 description = "Detects the current PikeSquares installation and launches it."
@@ -68,6 +74,8 @@ PIKESQUARES_SCIE_BINDINGS = "{scie.bindings}"
 PIKESQUARES_VERSION = "{scie.bindings.configure:PIKESQUARES_VERSION}"
 _PIKESQUARES_SERVER_EXE = "{scie.bindings.install:PIKESQARES_SERVER_EXE}"
 PIKESQUARES_DATA_DIR = "{scie.bindings.install:PIKESQUARES_DATA_DIR}"
+PIKESQUARES_EASY_RSA_DIR = "{easyrsa}"
+
 PEX_ROOT = "{scie.bindings}/pex_root"
 PEX_PYTHON_PATH = "#{cpython312:python}"
 
@@ -112,6 +120,7 @@ env.remove_re = [
 
 [lift.bindings.env.default]
 PIKESQUARES_VERSION_PROMPT_SALT = "{scie.env.PIKESQUARES_VERSION_PROMPT_SALT}"
+PIKESQUARES_EASY_RSA_DIR = "{easyrsa}"
 
 [lift.bindings.env.replace]
 PEX_ROOT = "{scie.bindings}/pex_root"
@@ -194,4 +203,5 @@ env.remove_re = [
 [lift.bindings.env.replace]
 PEX_ROOT = "{scie.bindings}/pex_root"
 PEX_PYTHON_PATH = "#{cpython312:python}"
+
 
