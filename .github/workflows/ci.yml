@@ -17,7 +17,7 @@ env:
 jobs:
   org-check:
     name: Check GitHub Organization
-    if: github.repository_owner == 'Eloquent'
+    if: github.repository_owner == 'EloquentBits'
     runs-on: ubuntu-22.04
     steps:
       - name: Noop
