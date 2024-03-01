@@ -3,9 +3,9 @@ name: CI
 on:
   push:
     branches:
-      - master
+      - master-disabled
     tags:
-      - "v*.*.*"
+      - "v*.*.*-disabled"
 defaults:
   run:
     shell: bash
