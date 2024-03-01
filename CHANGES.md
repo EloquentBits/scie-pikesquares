@@ -1,5 +1,8 @@
 # Release Notes
 
+## 0.0.2
+
+github actions workflows
 
 ## 0.0.1
 
