@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.0.10
+
+upgrade pbt python standalone version
+
 ## 0.0.9
 
 upgrade pbt python standalone version
