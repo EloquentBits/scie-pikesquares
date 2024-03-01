@@ -97,4 +97,3 @@ jobs:
           prerelease: false
           files: dist/scie-pikesquares-*
           fail_on_unmatched_files: true
-          discussion_category_name: Announcements

@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.0.16
+
+gh actions releases disable discussion category
+
 ## 0.0.15
 
 gh actions releases
