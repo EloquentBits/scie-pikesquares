@@ -5,8 +5,8 @@ members = [
 
 [package]
 name = "scie-pikesquares"
-description = "Protects your PikeSquares from the elements."
-version = "0.10.6"
+description = "PikeSquares self-contained build."
+version = "0.0.1"
 edition = "2021"
 authors = [
     "Philip Kalinsky <philip.kalinsky@eloquentbits.com>",
