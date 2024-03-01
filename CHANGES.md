@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.0.19
+
+update release tags json file
+
 ## 0.0.18
 
 gh actions change macos runners
