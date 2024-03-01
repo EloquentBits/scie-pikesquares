@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.0.17
+
+gh actions change macos runners
+
 ## 0.0.16
 
 gh actions releases disable discussion category
