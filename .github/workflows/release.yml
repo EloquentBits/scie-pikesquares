@@ -15,14 +15,14 @@ jobs:
   org-check:
     name: Check GitHub Organization
     if: ${{ github.repository_owner == 'EloquentBits' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Noop
         run: "true"
   determine-tag:
     name: Determine the release tag to operate against.
     needs: org-check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       release-tag: ${{ steps.determine-tag.outputs.release-tag }}
       release-version: ${{ steps.determine-tag.outputs.release-version }}
@@ -48,7 +48,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, macOS-10.15-X64, macOS-11-ARM64 ]
+        os: [ ubuntu-22.04, macOS-10.15-X64, macOS-11-ARM64 ]
     environment: Release
     steps:
       - name: Checkout scie-pikesquares ${{ needs.determine-tag.outputs.release-tag }}
@@ -56,29 +56,29 @@ jobs:
         with:
           ref: ${{ needs.determine-tag.outputs.release-tag }}
       - name: Package scie-pikesquares ${{ needs.determine-tag.outputs.release-tag }} binary
-        if: ${{ matrix.os != 'ubuntu-latest' }}
+        #if: ${{ matrix.os != 'ubuntu-22.04' }}
         run: cargo run -p package -- --dest-dir dist/ scie
-      - name: Package scie-pikesquares ${{ needs.determine-tag.outputs.release-tag }} binary
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          cargo run -p package -- --dest-dir dist/ tools
-          docker run --rm \
-            -v $PWD:/code \
-            -w /code \
-            rust:1.70.0-alpine3.18 \
-              sh -c '
-                apk add cmake make musl-dev perl && \
-                cargo run -p package -- --dest-dir dist/ scie
-              '
-          cargo run -p package -- --dest-dir dist/ scie \
-            --scie-pikesquares dist/scie-pikesquares --tools-pex dist/tools.pex
+      #- name: Package scie-pikesquares ${{ needs.determine-tag.outputs.release-tag }} binary
+      #  if: ${{ matrix.os == 'ubuntu-22.04' }}
+      #  run: |
+      #    cargo run -p package -- --dest-dir dist/ tools
+      #    docker run --rm \
+      #      -v $PWD:/code \
+      #      -w /code \
+      #      rust:1.70.0-alpine3.18 \
+      #        sh -c '
+      #          apk add cmake make musl-dev perl && \
+      #          cargo run -p package -- --dest-dir dist/ scie
+      #        '
+      #    cargo run -p package -- --dest-dir dist/ scie \
+      #      --scie-pikesquares dist/scie-pikesquares --tools-pex dist/tools.pex
       - name: Prepare Changelog
         id: prepare-changelog
         uses: a-scie/actions/changelog@v1.5
         with:
           changelog-file: ${{ github.workspace }}/CHANGES.md
           version: ${{ needs.determine-tag.outputs.release-version }}
-          setup-python: ${{ matrix.os == 'ubuntu-latest' }}
+          setup-python: ${{ matrix.os == 'ubuntu-22.04' }}
       - name: Create ${{ needs.determine-tag.outputs.release-tag }} Release
         uses: softprops/action-gh-release@v1
         env:
