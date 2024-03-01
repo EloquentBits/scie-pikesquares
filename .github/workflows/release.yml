@@ -12,6 +12,8 @@ on:
         required: true
 env:
   CARGO_TERM_COLOR: always
+permissions:
+  contents: write
 jobs:
   org-check:
     name: Check GitHub Organization
