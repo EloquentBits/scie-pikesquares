@@ -77,13 +77,8 @@ def install_pikesquares_from_pex(
 ) -> None:
     """Installs PikeSquares into the venv using the platform-specific pre-built PEX."""
     uname = os.uname()
-    #pex_name = f"pikesquares.{version}-cp39-{uname.sysname.lower()}_{uname.machine.lower()}.pex"
-    pex_name = f"pikesquares-{uname.sysname.lower()}-{uname.machine.lower()}.pex"
-
-    # https://github.com/EloquentBits/pikesquares/releases/download/0.1.2/pikesquares-linux-x86_64.pex
-    # https://github.com/EloquentBits/pikesquares/releases/download/0.1.2/pikesquares-macos-arm64.pex
-    # https://github.com/EloquentBits/pikesquares/releases/download/0.1.2/pikesquares-macos-x86_64.pex
-
+    OS = "macos" if uname.sysname.lower() == "darwin" else "linux"
+    pex_name = f"pikesquares-{OS}-{uname.machine.lower()}.pex"
     pex_url = f"https://github.com/EloquentBits/pikesquares/releases/download/{version}/{pex_name}"
 
     with tempfile.NamedTemporaryFile(suffix=".pex") as pikesquares_pex:

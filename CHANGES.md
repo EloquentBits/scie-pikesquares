@@ -1,6 +1,10 @@
 # Release Notes
 
-## 0.0.19
+## 0.0.21
+
+fix macos as OS when downloading the pikesquares pex
+
+## 0.0.20
 
 fetch latest pikesquares version from GitHub releases
 

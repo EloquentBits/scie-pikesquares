@@ -79,8 +79,6 @@ def main() -> NoReturn:
             }, 
             Query().version == str(version),
         )
-        print(f"wrote conf to tinydb. ")
-
     #Path(v).mkdir(mode=0o777, parents=True, exist_ok=True)
 
     sys.exit(0)
