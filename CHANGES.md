@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.0.23
+
+upgrade pikesquares pex release version
+
 ## 0.0.22
 
 config dirs
