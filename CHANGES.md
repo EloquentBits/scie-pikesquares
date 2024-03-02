@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.0.22
+
+config dirs
+
 ## 0.0.21
 
 fix macos as OS when downloading the pikesquares pex

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import pwd
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
@@ -10,7 +9,7 @@ from typing import NoReturn
 from tinydb import TinyDB, Query
 from platformdirs import (
     user_data_dir, 
-    user_runtime_dir,
+    site_runtime_dir,
     user_config_dir,
     user_log_dir,
 )
@@ -52,9 +51,14 @@ def main() -> NoReturn:
         version = resolve_info.stable_version
 
     python = "cpython312"
-    current_user: str = pwd.getpwuid(os.getuid()).pw_name
     APP_NAME = "pikesquares"
-    DATA_DIR = Path(user_data_dir(APP_NAME, current_user))
+    DATA_DIR = Path(user_data_dir(APP_NAME, ensure_exists=True))
+    LOG_DIR = Path(user_log_dir(APP_NAME, ensure_exists=True))
+    RUN_DIR = Path(site_runtime_dir(APP_NAME, ensure_exists=True))
+    CONFIG_DIR = Path(user_config_dir(APP_NAME, ensure_exists=True))
+    PLUGINS_DIR = DATA_DIR / 'plugins'
+    PLUGINS_DIR.mkdir(mode=0o777, parents=True, exist_ok=True)
+    PKI_DIR = DATA_DIR / 'pki'
 
     with open(env_file, "a") as fp:
         #print(f"PIKESQUARES_BUILDROOT_OVERRIDE=/home/pk/eqb/pikesquares", file=fp)
@@ -68,19 +72,17 @@ def main() -> NoReturn:
                 "RUN_AS_UID": os.getuid(),
                 "RUN_AS_GID": os.getgid(),
                 "DATA_DIR": str(DATA_DIR),
-                "RUN_DIR": str(Path(user_runtime_dir(APP_NAME, current_user))),
-                "LOG_DIR": str(Path(user_log_dir(APP_NAME, current_user))),
-                "CONFIG_DIR": str(Path(user_config_dir(APP_NAME, current_user))),
-                "PLUGINS_DIR": str(DATA_DIR / 'plugins'),
+                "RUN_DIR": str(RUN_DIR),
+                "LOG_DIR": str(LOG_DIR),
+                "CONFIG_DIR": str(CONFIG_DIR),
+                "PLUGINS_DIR": str(PLUGINS_DIR),
                 "EMPEROR_ZMQ_ADDRESS": "127.0.0.1:5250",
                 "EASYRSA_DIR": os.environ.get("PIKESQUARES_EASY_RSA_DIR"),
-                "PKI_DIR": str(DATA_DIR / 'pki'),
+                "PKI_DIR": str(PKI_DIR),
                 "version": str(version),
             }, 
             Query().version == str(version),
         )
-    #Path(v).mkdir(mode=0o777, parents=True, exist_ok=True)
-
     sys.exit(0)
 
 
