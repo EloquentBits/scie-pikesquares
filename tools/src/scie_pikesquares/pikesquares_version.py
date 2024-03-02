@@ -48,19 +48,13 @@ def determine_latest_stable_version(
     info(f"Fetching latest stable PikeSquares version since none is configured")
 
     try:
-        latest_tag = ptex.fetch_json(
-            "https://github.com/eloquentbits/pikesquares/releases/latest", Accept="application/json"
+        pikesquares_version = ptex.fetch_json(
+            "https://github.com/EloquentBits/pikesquares/releases/latest", Accept="application/json"
         )["tag_name"]
     except Exception as e:
         fatal(
-            "Couldn't get the latest release by fetching https://github.com/eloquentbits/pikesquares/releases/latest.\n\n"
+            "Couldn't get the latest release by fetching https://github.com/EloquentBits/pikesquares/releases/latest.\n\n"
             + f"Exception:\n\n{e}"
-        )
-
-    prefix, _, pikesquares_version = latest_tag.partition("_")
-    if prefix != "release" or not pikesquares_version:
-        fatal(
-            f'Expected the GitHub Release tagged "latest" to have the "release_" prefix. Got "{latest_tag}"\n\n'
         )
 
     return ResolveInfo(

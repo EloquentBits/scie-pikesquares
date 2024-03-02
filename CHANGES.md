@@ -2,6 +2,10 @@
 
 ## 0.0.19
 
+fetch latest pikesquares version from GitHub releases
+
+## 0.0.19
+
 update release tags json file
 
 ## 0.0.18
