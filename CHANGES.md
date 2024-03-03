@@ -1,5 +1,10 @@
 # Release Notes
 
+
+## 0.0.24
+
+upgrade pikesquares pex release version. Look for latest stable version from Github Releases page
+
 ## 0.0.23
 
 upgrade pikesquares pex release version

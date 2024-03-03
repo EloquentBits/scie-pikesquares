@@ -39,16 +39,16 @@ def main() -> NoReturn:
 
     ptex = get_ptex(options)
 
-    if options.pikesquares_version:
-        resolve_info = determine_tag_version(
-            pikesquares_version=options.pikesquares_version,
-        )
-        version = resolve_info.stable_version
-    else:
-        resolve_info = determine_latest_stable_version(
-            ptex=ptex,
-        )
-        version = resolve_info.stable_version
+    #if options.pikesquares_version:
+    #    resolve_info = determine_tag_version(
+    #        pikesquares_version=options.pikesquares_version,
+    #    )
+    #    version = resolve_info.stable_version
+    #else:
+    resolve_info = determine_latest_stable_version(
+        ptex=ptex,
+    )
+    version = resolve_info.stable_version
 
     python = "cpython312"
     APP_NAME = "pikesquares"
