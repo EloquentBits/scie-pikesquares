@@ -5,3 +5,5 @@ packaging
 platformdirs
 tinydb
 tomlkit
+questionary
+typer[all]

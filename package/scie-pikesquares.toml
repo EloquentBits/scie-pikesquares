@@ -121,6 +121,7 @@ env.remove_re = [
 [lift.bindings.env.default]
 PIKESQUARES_VERSION_PROMPT_SALT = "{scie.env.PIKESQUARES_VERSION_PROMPT_SALT}"
 PIKESQUARES_EASY_RSA_DIR = "{easyrsa}"
+PIKESQUARES_SENTRY_DSN = "https://762eae3fd173251d5bcb2560564b84d6@sentry.mirimus.com/20"
 
 [lift.bindings.env.replace]
 PEX_ROOT = "{scie.bindings}/pex_root"
@@ -138,10 +139,6 @@ args = [
     "install-pikesquares",
     "--pikesquares-version",
     "{scie.bindings.configure:PIKESQUARES_VERSION}",
-    "--find-links",
-    "{scie.bindings.configure:FIND_LINKS}",
-    "--pikesquares-bootstrap-urls",
-    "{scie.env.PIKESQUARES_BOOTSTRAP_URLS}",
     "--ptex-path",
     "{ptex}",
     "{scie.bindings}",

@@ -1,5 +1,12 @@
 # Release Notes
 
+## 0.0.26
+
+env var to include sentry dsn
+
+## 0.0.25
+
+upgrade pikesquares pex release version. Look for latest stable version from Github Releases page
 
 ## 0.0.24
 
