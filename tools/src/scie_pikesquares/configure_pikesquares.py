@@ -194,7 +194,6 @@ def main_typer(
     PLUGINS_DIR = DATA_DIR / 'plugins'
     PLUGINS_DIR.mkdir(mode=0o777, parents=True, exist_ok=True)
     PKI_DIR = DATA_DIR / 'pki'
-    SENTRY_DSN = os.environ.get("PIKESQUARES_SENTRY_DSN")
 
     with open(env_file, "a") as fp:
         print(f"PIKESQUARES_VERSION={version}", file=fp)
@@ -217,7 +216,7 @@ def main_typer(
                 "EMPEROR_ZMQ_ADDRESS": "127.0.0.1:5250",
                 "EASYRSA_DIR": os.environ.get("PIKESQUARES_EASY_RSA_DIR"),
                 "PKI_DIR": str(PKI_DIR),
-                "SENTRY_DSN": SENTRY_DSN,
+                "SENTRY_DSN": os.environ.get("PIKESQUARES_SENTRY_DSN"),
                 "version": str(version),
             }, 
             Query().version == str(version),
@@ -285,6 +284,7 @@ def main() -> NoReturn:
                 "PLUGINS_DIR": str(PLUGINS_DIR),
                 "EMPEROR_ZMQ_ADDRESS": "127.0.0.1:5250",
                 "EASYRSA_DIR": os.environ.get("PIKESQUARES_EASY_RSA_DIR"),
+                "SENTRY_DSN": os.environ.get("PIKESQUARES_SENTRY_DSN"),
                 "PKI_DIR": str(PKI_DIR),
                 "version": str(version),
             }, 
