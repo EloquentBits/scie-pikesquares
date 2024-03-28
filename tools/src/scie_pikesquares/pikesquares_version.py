@@ -45,7 +45,7 @@ def determine_tag_version(
 def determine_latest_stable_version(
     ptex: Ptex, 
 ) -> ResolveInfo:
-    info(f"Fetching latest stable PikeSquares version since none is configured")
+    info(f"Fetching latest stable PikeSquares version.")
 
     try:
         pikesquares_version = ptex.fetch_json(

@@ -50,24 +50,22 @@ def prompt_for_pants_version(pants_config: Path) -> bool:
 
 
 def prompt_for_localdev_dir() -> Path | None:
-    cwd = os.getcwd()
-    buildroot = Path(cwd)
-    if shutil.which("git"):
-        result = subprocess.run(
-            args=["git", "rev-parse", "--show-toplevel"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-        )
-        if result.returncode == 0:
-            buildroot = Path(os.fsdecode(result.stdout.strip()))
+    #cwd = os.getcwd()
+    #buildroot = Path(cwd)
+    #if shutil.which("git"):
+    #    result = subprocess.run(
+    #        args=["git", "rev-parse", "--show-toplevel"],
+    #        stdout=subprocess.PIPE,
+    #        stderr=subprocess.DEVNULL,
+    #    )
+    #    if result.returncode == 0:
+    #        buildroot = Path(os.fsdecode(result.stdout.strip()))
 
-            if prompt(f"Would you like to configure {buildroot} as a localdev project?", default=True):
-                return buildroot
-
-    raw_answer = input(f"Provide the path to local repo of PikeSquares: ")
-    answer = raw_answer.strip().lower()
-    if Path(answer).exists():
-        return Path(answer)
+    if prompt(f"Would you like to configure as a localdev project?", default=True):
+        raw_answer = input(f"Provide the path to local repo of PikeSquares: ")
+        answer = raw_answer.strip().lower()
+        if Path(answer).exists():
+            return Path(answer)
 
 
 custom_style_dope = questionary.Style(
@@ -132,7 +130,7 @@ def main_typer(
     obj = ctx.ensure_object(dict)
     obj["verbose"] = verbose
 
-    info(f"lift.bindings:configure {pikesquares_version=} {base_dir=} {ptex_path=} ")
+    #info(f"lift.bindings:configure {pikesquares_version=} {base_dir=} {ptex_path=} ")
 
     init_logging(base_dir=base_dir, log_name="configure")
 
@@ -142,7 +140,7 @@ def main_typer(
     if not env_file:
         fatal("Expected SCIE_BINDING_ENV to be set in the environment")
 
-    debug(f"lift.bindings.configure: {pikesquares_version=}")
+    #debug(f"lift.bindings.configure: {pikesquares_version=}")
 
     if pikesquares_version and "dev" in pikesquares_version:
         debug(f"configuring PikeSquares v{pikesquares_version} for Local Development ")
@@ -178,7 +176,9 @@ def main_typer(
             only_directories=True,
             style=custom_style_dope,
         ).ask()
-
+    #elif pikesquares_version:
+        # fetch version 
+    #    pass
     else:
         pt = Ptex(_exe=str(ptex_path))
         resolve_info = determine_latest_stable_version(ptex=pt)
@@ -214,7 +214,6 @@ def main_typer(
                 "CONFIG_DIR": str(CONFIG_DIR),
                 "PLUGINS_DIR": str(PLUGINS_DIR),
                 "EMPEROR_ZMQ_ADDRESS": "127.0.0.1:5250",
-                "EASYRSA_DIR": os.environ.get("PIKESQUARES_EASY_RSA_DIR"),
                 "PKI_DIR": str(PKI_DIR),
                 "SENTRY_DSN": os.environ.get("PIKESQUARES_SENTRY_DSN"),
                 "version": str(version),
@@ -264,6 +263,7 @@ def main() -> NoReturn:
     PLUGINS_DIR = DATA_DIR / 'plugins'
     PLUGINS_DIR.mkdir(mode=0o777, parents=True, exist_ok=True)
     PKI_DIR = DATA_DIR / 'pki'
+    SENTRY_DSN="https://ac357cb22613711d55728418d91a53d1@sentry.eloquentbits.com/2"
 
     with open(env_file, "a") as fp:
         print(f"PIKESQUARES_VERSION={version}", file=fp)
@@ -283,8 +283,7 @@ def main() -> NoReturn:
                 "CONFIG_DIR": str(CONFIG_DIR),
                 "PLUGINS_DIR": str(PLUGINS_DIR),
                 "EMPEROR_ZMQ_ADDRESS": "127.0.0.1:5250",
-                "EASYRSA_DIR": os.environ.get("PIKESQUARES_EASY_RSA_DIR"),
-                "SENTRY_DSN": os.environ.get("PIKESQUARES_SENTRY_DSN"),
+                "SENTRY_DSN": SENTRY_DSN,
                 "PKI_DIR": str(PKI_DIR),
                 "version": str(version),
             }, 

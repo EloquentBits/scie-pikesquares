@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.0.28
+
+env var to include sentry dsn
+
 ## 0.0.26
 
 env var to include sentry dsn
