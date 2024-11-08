@@ -11,7 +11,7 @@ import tempfile
 from argparse import ArgumentParser
 #from glob import glob
 from pathlib import Path
-from typing import Iterable, NoReturn
+from typing import NoReturn
 
 from tinydb import TinyDB, Query
 from packaging.version import Version
@@ -57,7 +57,7 @@ def install_pikesquares_from_pex(
 
 def install_pikesquares_localdev(
     venv_dir: Path,
-    pikesquares_localdev_dir: str,
+    localdev_dir: str,
 ) -> None:
 
     subprocess.run(
@@ -86,7 +86,7 @@ def install_pikesquares_localdev(
             "install",
             #"--quiet",
             "--requirement",
-            str(Path(pikesquares_localdev_dir) / "requirements.txt"),
+            str(Path(localdev_dir) / "requirements.txt"),
         ],
         check=True,
     )
@@ -104,13 +104,13 @@ def install_pikesquares_localdev(
             "install",
             #"--quiet",
             "--editable",
-            pikesquares_localdev_dir,
+            localdev_dir,
         ],
         check=True,
     )
 
-    pywsgi_wheel = "pikesquares_pyuwsgi-2.0.24.post0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
-    pyuwsgi = f"https://pypi.vc.eloquentbits.com/packages/{pywsgi_wheel}"
+    # pywsgi_wheel = "pikesquares_pyuwsgi-2.0.24.post0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+    # pyuwsgi = f"https://pypi.vc.eloquentbits.com/packages/{pywsgi_wheel}"
 
     subprocess.run(
         args=[
@@ -124,7 +124,11 @@ def install_pikesquares_localdev(
             str(venv_dir / "pikesquares-install.log"),
             "install",
             #"--quiet",
-            pyuwsgi,
+            "--trusted-host",
+            "pypi.vc.eloquentbits.com",
+            "-i",
+            "https://pypi.vc.eloquentbits.com",
+            "pyuwsgi==2.0.28.post1",
         ],
         check=True,
     )
@@ -137,6 +141,7 @@ def main() -> NoReturn:
         "--pikesquares-version", type=Version, required=True, help="The PikeSquares version to install"
     )
     parser.add_argument("--debug", type=bool, help="Install with debug capabilities.")
+    parser.add_argument("--localdev-dir", type=str, help="PikeSquares repo as editable install.")
     parser.add_argument("base_dir", nargs=1, help="The base directory to create PikeSquares venvs in.")
     options = parser.parse_args()
 
@@ -158,31 +163,23 @@ def main() -> NoReturn:
 
     venv_dir = venvs_dir / str(version)
 
-    if "dev" in str(version):
-        #pikesquares_localdev_dir = os.environ.get("PIKESQUARES_LOCALDEV_DIR")
-        pikesquares_localdev_dir = "/home/pk/dev/eqb/pikesquares"
-        if Path(pikesquares_localdev_dir).exists():
-            debug(f"lift.bindings.install: {pikesquares_localdev_dir=}")
-            install_pikesquares_localdev(
-                venv_dir=venv_dir,
-                pikesquares_localdev_dir=pikesquares_localdev_dir
-            )
-        else:
-            info(f"lift.bindings.install: {pikesquares_localdev_dir=}")
-            sys.exit()
+    #if "dev" in str(version):
+    #    localdev_dir = os.environ.get("PIKESQUARES_LOCALDEV_DIR")
+    if options.localdev_dir and Path(options.localdev_dir).exists():
+        install_pikesquares_localdev(
+            venv_dir=venv_dir,
+            localdev_dir=options.localdev_dir
+        )
     else:
-        prompt = f"PikeSquares {version}"
         install_pikesquares_from_pex(
             venv_dir=venv_dir,
-            prompt=prompt,
+            prompt=f"PikeSquares {version}",
             version=version,
             ptex=ptex,
         )
-        pikesquares_requirements = [f"pikesquares=={version}"]
         info(
-            f"Installing {' '.join(pikesquares_requirements)} into a virtual environment at {venv_dir}"
+            f"Installing pikesquares=={version} into a virtual environment at {venv_dir}"
         )
-
     info(f"New virtual environment successfully created at {venv_dir}")
 
     pikesquares_server_exe = str(venv_dir / "bin" / "pikesquares")

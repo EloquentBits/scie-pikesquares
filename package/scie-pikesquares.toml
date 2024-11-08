@@ -1,6 +1,7 @@
 [lift]
 name = "scie-pikesquares"
-description = "Isolates your PikeSquares from the elements."
+description = "PikeSquares isolation."
+#base = "{scie.env.SCIE_BASE:/var/lib/pikesquares}"
 load_dotenv = true
 
 [lift.app_info]
@@ -8,33 +9,33 @@ repo = "https://github.com/eloquentbits/scie-pikesquares"
 
 [lift.ptex]
 id = "ptex"
-version = "0.7.0"
+version = "1.2.0"
 argv1 = "{scie.env.PIKESQUARES_BOOTSTRAP_URLS={scie.lift}}"
 
 [lift.scie_jump]
-version = "0.14.0"
+version = "1.2.0"
 
 [[lift.interpreters]]
-id = "cpython312"
-provider = "PythonBuildStandalone"
-release = "20240224"
-lazy = true
-version = "3.12.2"
-
-[[lift.interpreters]]
-id = "cpython39"
-provider = "PythonBuildStandalone"
-release = "20240107"
-lazy = true
-version = "3.9.18"
-
-[[lift.interpreter_groups]]
 id = "cpython"
-selector = "{scie.bindings.configure:PYTHON}"
-members = [
-    "cpython39",
-    "cpython312",
-]
+provider = "PythonBuildStandalone"
+release = "20241016"
+lazy = true
+version = "3.12.7"
+
+#[[lift.interpreters]]
+#id = "cpython39"
+#provider = "PythonBuildStandalone"
+#release = "20241007"
+#lazy = true
+#version = "3.9.18"
+
+#[[lift.interpreter_groups]]
+#id = "cpython"
+#selector = "{scie.bindings.configure:PYTHON}"
+#members = [
+#    "cpython39",
+#    "cpython312",
+#]
 
 [[lift.files]]
 # N.B.: We name the scie-pikesquares binary scie-pikesquares.bin since the scie itself is named scie-pikesquares
@@ -49,6 +50,15 @@ name = "easyrsa"
 type = "tar.gz"
 digest = { size = 81373, fingerprint = "aaa48fadcbb77511b9c378554ef3eae09f8c7bc149d6f56ba209f1c9bab98c6e" }
 source = { url = "https://github.com/OpenVPN/easy-rsa/releases/download/v3.1.7/EasyRSA-3.1.7.tgz", lazy = true }
+
+
+[[lift.files]]
+name = "caddy"
+type = "tar.gz"
+digest = { size = 14655532, fingerprint = "99587cf77c595f0bf62cc23c9ea101f9879fa016c7b689d498ce054904821f22" }
+source = { url = "https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_linux_amd64.tar.gz", lazy = true }
+
+#"{scie.platform}",
 
 # Boot
 [[lift.commands]]
@@ -69,15 +79,16 @@ exe = "{scie.bindings.install:PIKESQUARES_SERVER_EXE}"
 [lift.commands.env.default]
 PIKESQUARES_BUILDROOT_OVERRIDE = "{scie.bindings.configure:PIKESQUARES_BUILDROOT_OVERRIDE}"
 PIKESQUARES_SCIE_BINDINGS = "{scie.bindings}"
+#PIKESQUARES_EASYRSA_DIR = "{easyrsa}"
+CADDY_DIR = "{caddy}"
 
 [lift.commands.env.replace]
 PIKESQUARES_VERSION = "{scie.bindings.configure:PIKESQUARES_VERSION}"
 _PIKESQUARES_SERVER_EXE = "{scie.bindings.install:PIKESQARES_SERVER_EXE}"
 PIKESQUARES_DATA_DIR = "{scie.bindings.install:PIKESQUARES_DATA_DIR}"
-PIKESQUARES_EASY_RSA_DIR = "{easyrsa}"
 
 PEX_ROOT = "{scie.bindings}/pex_root"
-PEX_PYTHON_PATH = "#{cpython312:python}"
+PEX_PYTHON_PATH = "#{cpython:python}"
 
 # Bootstrap Tools
 [[lift.commands]]
@@ -104,7 +115,7 @@ PEX_PYTHON_PATH = "#{cpython:python}"
 [[lift.bindings]]
 name = "configure"
 description = "Configure PikeSquares"
-exe = "#{cpython312:python}"
+exe = "#{cpython:python}"
 args = [
     "{tools.pex}",
     "configure-pikesquares",
@@ -123,7 +134,7 @@ PIKESQUARES_VERSION_PROMPT_SALT = "{scie.env.PIKESQUARES_VERSION_PROMPT_SALT}"
 
 [lift.bindings.env.replace]
 PEX_ROOT = "{scie.bindings}/pex_root"
-PEX_PYTHON_PATH = "#{cpython312:python}"
+PEX_PYTHON_PATH = "#{cpython:python}"
 
 # Install PikeSquares
 [[lift.bindings]]
@@ -139,6 +150,8 @@ args = [
     "{scie.bindings.configure:PIKESQUARES_VERSION}",
     "--ptex-path",
     "{ptex}",
+    "--localdev-dir",
+    "{scie.bindings.configure:PIKESQUARES_LOCALDEV_DIR}",
     "{scie.bindings}",
 ]
 env.remove_re = [
@@ -153,7 +166,7 @@ PEX_PYTHON_PATH = "#{cpython:python}"
 [[lift.commands]]
 name = "update"
 description = "Update scie-pikesquares."
-exe = "#{cpython312:python}"
+exe = "#{cpython:python}"
 args = [
     "{tools.pex}",
     "update-scie-pikesquares",
@@ -176,13 +189,13 @@ env.remove_re = [
 
 [lift.commands.env.replace]
 PEX_ROOT = "{scie.bindings}/pex_root"
-PEX_PYTHON_PATH = "#{cpython312:python}"
+PEX_PYTHON_PATH = "#{cpython:python}"
 
 # Self Info
 [[lift.bindings]]
 name = "scie-pikesquares-info"
 description = "Records information about the current scie-pikesquares binary."
-exe = "#{cpython312:python}"
+exe = "#{cpython:python}"
 args = [
     "{tools.pex}",
     "record-scie-pikesquares-info",
@@ -197,6 +210,6 @@ env.remove_re = [
 
 [lift.bindings.env.replace]
 PEX_ROOT = "{scie.bindings}/pex_root"
-PEX_PYTHON_PATH = "#{cpython312:python}"
+PEX_PYTHON_PATH = "#{cpython:python}"
 
 
