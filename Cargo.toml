@@ -6,7 +6,7 @@ members = [
 [package]
 name = "scie-pikesquares"
 description = "PikeSquares self-contained build."
-version = "0.0.28"
+version = "0.0.29"
 edition = "2021"
 authors = [
     "Philip Kalinsky <philip.kalinsky@eloquentbits.com>",
