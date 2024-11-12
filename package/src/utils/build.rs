@@ -16,7 +16,7 @@ use crate::utils::fs::{copy, ensure_directory, path_as_str, rename};
 use crate::utils::os::PATHSEP;
 use crate::{build_step, BINARY, SCIENCE_TAG};
 
-const BOOTSTRAP_PTEX_TAG: &str = "v0.7.0";
+const BOOTSTRAP_PTEX_TAG: &str = "v1.2.0";
 
 const CARGO: &str = env!("CARGO");
 const CARGO_MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
