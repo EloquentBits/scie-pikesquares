@@ -51,7 +51,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-22.04, macos-latest, macos-latest-xlarge ]
+        os: [ ubuntu-22.04, macos-13, macos-14 ]
     environment: Release
     steps:
       - name: Checkout scie-pikesquares ${{ needs.determine-tag.outputs.release-tag }}

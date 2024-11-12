@@ -212,8 +212,8 @@ def main() -> NoReturn:
 
     PLUGINS_DIR = DATA_DIR / 'plugins'
     PLUGINS_DIR.mkdir(mode=0o777, parents=True, exist_ok=True)
-    #PKI_DIR = DATA_DIR / 'pki'
-    SENTRY_DSN="https://ac357cb22613711d55728418d91a53d1@sentry.eloquentbits.com/2"
+    PKI_DIR = DATA_DIR / 'pki'
+    #SENTRY_DSN="https://ac357cb22613711d55728418d91a53d1@sentry.eloquentbits.com/2"
 
     if options.pikesquares_version and "dev" in options.pikesquares_version:
         debug(f"configuring PikeSquares v{options.pikesquares_version} for Local Development ")
@@ -253,8 +253,8 @@ def main() -> NoReturn:
                 "LOG_DIR": str(LOG_DIR),
                 "CONFIG_DIR": str(CONFIG_DIR),
                 "PLUGINS_DIR": str(PLUGINS_DIR),
-                "SENTRY_DSN": SENTRY_DSN,
-                #"PKI_DIR": str(PKI_DIR),
+                #"SENTRY_DSN": SENTRY_DSN,
+                "PKI_DIR": str(PKI_DIR),
                 "version": str(version),
             }, 
             Query().version == str(version),
