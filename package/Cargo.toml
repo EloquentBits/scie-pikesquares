@@ -1,6 +1,6 @@
 [package]
 name = "package"
-version = "0.2.1"
+version = "0.0.32"
 description = "Packages the scie-pikesquares binary."
 authors = [
     "Philip Kalinsky <philip.kalinsky@eloquentbits.com>",
