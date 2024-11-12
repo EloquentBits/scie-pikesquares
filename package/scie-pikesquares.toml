@@ -18,7 +18,7 @@ version = "1.2.0"
 [[lift.interpreters]]
 id = "cpython"
 provider = "PythonBuildStandalone"
-release = "20241016"
+release = "20241002"
 lazy = true
 version = "3.12.7"
 
