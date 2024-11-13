@@ -115,7 +115,7 @@ def main() -> NoReturn:
     current_uid = os.getuid()
     current_gid = os.getgid()
     server_run_as_uid = current_uid
-    server_run_as_gid = current_uid
+    server_run_as_gid = current_gid
     new_server_run_as_uid = None
     new_server_run_as_gid = None
     apps_run_as_uid = None
