@@ -13,14 +13,26 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import NoReturn
 
+import questionary
 from tinydb import TinyDB, Query
 from packaging.version import Version
-from platformdirs import user_data_dir
+import platformdirs
 
 from scie_pikesquares.log import debug, fatal, info, init_logging, warn
 from scie_pikesquares.ptex import Ptex
 
 log = logging.getLogger(__name__)
+
+custom_style_dope = questionary.Style(
+    [
+        ("separator", "fg:#6C6C6C"),
+        ("qmark", "fg:#FF9D00 bold"),
+        ("question", ""),
+        ("selected", "fg:#5F819D"),
+        ("pointer", "fg:#FF9D00 bold"),
+        ("answer", "fg:#5F819D bold"),
+    ]
+)
 
 
 def install_pikesquares_from_pex(
@@ -65,7 +77,7 @@ def install_pikesquares_localdev(
             sys.executable,
             "-m",
             "venv",
-            "--clear",
+            #"--clear",
             str(venv_dir),
         ],
         check=True,
@@ -111,6 +123,10 @@ def install_pikesquares_localdev(
 
     # pywsgi_wheel = "pikesquares_pyuwsgi-2.0.24.post0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
     # pyuwsgi = f"https://pypi.vc.eloquentbits.com/packages/{pywsgi_wheel}"
+
+    # pyuwsgi-2.0.28.post1-cp312-cp312-macosx_13_0_arm64.whl (575.7 KB) 
+    # pyuwsgi-2.0.28.post1-cp312-cp312-macosx_13_0_x86_64.whl (2.7 MB)  
+    # pyuwsgi-2.0.28.post1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 
     subprocess.run(
         args=[
@@ -166,10 +182,17 @@ def main() -> NoReturn:
     #if "dev" in str(version):
     #    localdev_dir = os.environ.get("PIKESQUARES_LOCALDEV_DIR")
     if options.localdev_dir and Path(options.localdev_dir).exists():
-        install_pikesquares_localdev(
-            venv_dir=venv_dir,
-            localdev_dir=options.localdev_dir
-        )
+        install_deps = True
+        #if venv_dir.exists() and questionary.confirm(
+        #        """Local PikeSquares dev venv exists. Skip installing dependencies?""",
+        #        default=True, auto_enter=True, style="bold italic fg:yellow",).ask():
+        #    install_deps = False
+
+        if install_deps:
+            install_pikesquares_localdev(
+                venv_dir=venv_dir,
+                localdev_dir=options.localdev_dir
+            )
     else:
         install_pikesquares_from_pex(
             venv_dir=venv_dir,
@@ -182,15 +205,20 @@ def main() -> NoReturn:
         )
     info(f"New virtual environment successfully created at {venv_dir}")
 
+    APP_NAME="pikesquares"
     pikesquares_server_exe = str(venv_dir / "bin" / "pikesquares")
     current_user: str = pwd.getpwuid(os.getuid()).pw_name
-    pikesquares_data_dir = Path(user_data_dir("pikesquares", current_user))
+    data_dir = platformdirs.user_data_path(APP_NAME, current_user)
+    log_dir = platformdirs.user_log_path(APP_NAME, current_user)
+
     with open(env_file, "a") as fp:
         print(f"VIRTUAL_ENV={venv_dir}", file=fp)
         print(f"PIKESQUARES_SERVER_EXE={pikesquares_server_exe}", file=fp)
-        print(f"PIKESQUARES_DATA_DIR={pikesquares_data_dir}", file=fp)
+        print(f"PIKESQUARES_DATA_DIR={data_dir}", file=fp)
+        print(f"PIKESQUARES_LOG_DIR={log_dir}", file=fp)
+        print(f"PIKESQUARES_VERSION={version}", file=fp)
 
-    with TinyDB(Path(pikesquares_data_dir) / "device-db.json") as db:
+    with TinyDB(data_dir / "device-db.json") as db:
         conf_db = db.table('configs')
         conf_db.upsert(
             {

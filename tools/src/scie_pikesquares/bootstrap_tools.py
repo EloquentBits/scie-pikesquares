@@ -53,6 +53,7 @@ def bootstrap_cache_key(options: Namespace) -> None:
         f"python_distribution_hash={require('python_distribution_hash')}",
         f"pikesquares_version={require('pikesquares_version')}",
     ]
+    print(" ".join(cache_key))
 
 
 def main() -> NoReturn:

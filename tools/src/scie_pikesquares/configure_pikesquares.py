@@ -12,12 +12,7 @@ from typing import NoReturn
 import questionary
 
 from tinydb import TinyDB, Query
-from platformdirs import (
-    user_data_dir, 
-    site_runtime_dir,
-    user_config_dir,
-    user_log_dir,
-)
+import platformdirs 
 from packaging.version import Version
 
 from scie_pikesquares.log import fatal, info, init_logging, warn, debug
@@ -95,12 +90,11 @@ def main() -> NoReturn:
     #argv0 = os.environ.get("SCIE_ARGV0")
     #print(f"scie-pikesquares: {argv0=}")
 
-
     for key, value in os.environ.items():
         if key.startswith(('PIKESQUARES', 'SCIE', 'PEX')):
             print(f' === {key}: {value}')
         else:
-            print(f"     {key}: {value}")
+            print(f'{key}: {value}')
 
     env_file = os.environ.get("SCIE_BINDING_ENV")
     localdev_dir = None
@@ -122,7 +116,7 @@ def main() -> NoReturn:
     apps_run_as_gid = None
 
     if 0 and current_uid != 0:
-        db_path = Path(user_data_dir(APP_NAME)) / 'device-db.json'
+        db_path = platformdirs.user_data_path(APP_NAME) / 'device-db.json'
         try:
             latest_config = get_latest_config(db_path)
             configured_uid = latest_config.get("SERVER_RUN_AS_UID") 
@@ -199,21 +193,19 @@ def main() -> NoReturn:
                 questionary.print(f"{new_server_run_as_uid=} {new_server_run_as_gid=}")
 
     if current_uid == 0:
-        DATA_DIR = Path(user_data_dir(APP_NAME, ensure_exists=True))
-        LOG_DIR = Path(user_log_dir(APP_NAME, ensure_exists=True))
-        RUN_DIR = Path(site_runtime_dir(APP_NAME, ensure_exists=True))
-        CONFIG_DIR = Path(user_config_dir(APP_NAME, ensure_exists=True))
+        DATA_DIR = platformdirs.user_data_dir(APP_NAME, ensure_exists=True)
+        LOG_DIR = platformdirs.user_log_dir(APP_NAME, ensure_exists=True)
+        RUN_DIR = platformdirs.site_runtime_dir(APP_NAME, ensure_exists=True)
+        CONFIG_DIR = platformdirs.user_config_path(APP_NAME, ensure_exists=True)
 
     else:
-        DATA_DIR = Path(user_data_dir(APP_NAME, ensure_exists=True))
-        LOG_DIR = Path(user_log_dir(APP_NAME, ensure_exists=True))
-        RUN_DIR = Path(site_runtime_dir(APP_NAME, ensure_exists=True))
-        CONFIG_DIR = Path(user_config_dir(APP_NAME, ensure_exists=True))
+        DATA_DIR = platformdirs.user_data_path(APP_NAME, ensure_exists=True)
+        LOG_DIR = platformdirs.user_log_path(APP_NAME, ensure_exists=True)
+        RUN_DIR = platformdirs.user_runtime_path(APP_NAME, ensure_exists=True)
+        CONFIG_DIR = platformdirs.user_config_path(APP_NAME, ensure_exists=True)
 
     PLUGINS_DIR = DATA_DIR / 'plugins'
-    PLUGINS_DIR.mkdir(mode=0o777, parents=True, exist_ok=True)
-    PKI_DIR = DATA_DIR / 'pki'
-    #SENTRY_DSN="https://ac357cb22613711d55728418d91a53d1@sentry.eloquentbits.com/2"
+    PLUGINS_DIR.mkdir(mode=0o777, parents=True, exist_ok=True) 
 
     if options.pikesquares_version and "dev" in options.pikesquares_version:
         debug(f"configuring PikeSquares v{options.pikesquares_version} for Local Development ")
@@ -233,10 +225,12 @@ def main() -> NoReturn:
         resolve_info = determine_latest_stable_version(ptex=get_ptex(options))
 
     version = resolve_info.stable_version
+    #process_compose_config = "/home/pk/dev/eqb/pikesquares/process-compose.yml"
 
     with open(env_file, "a") as fp:
         print(f"PIKESQUARES_VERSION={version}", file=fp)
         print(f"PYTHON={python}", file=fp)
+        #print(f"PIKESQUARES_PROCESS_COMPOSE_CONFIG={process_compose_config}", file=fp)
         if localdev_dir:
             print(f"PIKESQUARES_LOCALDEV_DIR={str(localdev_dir)}", file=fp)
 
@@ -253,8 +247,8 @@ def main() -> NoReturn:
                 "LOG_DIR": str(LOG_DIR),
                 "CONFIG_DIR": str(CONFIG_DIR),
                 "PLUGINS_DIR": str(PLUGINS_DIR),
-                #"SENTRY_DSN": SENTRY_DSN,
-                "PKI_DIR": str(PKI_DIR),
+                "SENTRY_DSN": os.environ.get("PIKESQUARES_SENTRY_DSN"),
+                "PKI_DIR": str(DATA_DIR / 'pki'),
                 "version": str(version),
             }, 
             Query().version == str(version),
