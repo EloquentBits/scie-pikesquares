@@ -32,14 +32,6 @@ def prompt(message: str, default: bool) -> bool:
     return answer in ("y", "yes")
 
 
-def prompt_for_pants_version(pants_config: Path) -> bool:
-    warn(
-        f"The `pants.toml` at {pants_config} has no `pants_version` configured in the `GLOBAL` "
-        f"section."
-    )
-    return prompt(f"Would you like set `pants_version` to the latest stable release?", default=True)
-
-
 def prompt_for_localdev_dir() -> Path | None:
     #cwd = os.getcwd()
     #buildroot = Path(cwd)
@@ -193,9 +185,9 @@ def main() -> NoReturn:
                 questionary.print(f"{new_server_run_as_uid=} {new_server_run_as_gid=}")
 
     if current_uid == 0:
-        DATA_DIR = platformdirs.user_data_dir(APP_NAME, ensure_exists=True)
-        LOG_DIR = platformdirs.user_log_dir(APP_NAME, ensure_exists=True)
-        RUN_DIR = platformdirs.site_runtime_dir(APP_NAME, ensure_exists=True)
+        DATA_DIR = platformdirs.user_data_path(APP_NAME, ensure_exists=True)
+        LOG_DIR = platformdirs.user_log_path(APP_NAME, ensure_exists=True)
+        RUN_DIR = platformdirs.site_runtime_path(APP_NAME, ensure_exists=True)
         CONFIG_DIR = platformdirs.user_config_path(APP_NAME, ensure_exists=True)
 
     else:
@@ -211,9 +203,15 @@ def main() -> NoReturn:
         debug(f"configuring PikeSquares v{options.pikesquares_version} for Local Development ")
         resolve_info = ResolveInfo(stable_version=Version(options.pikesquares_version), sha_version=None)
 
+        localdev_dir_in_parent = None
+        if (Path.cwd().parent / "pikesquares").exists():
+            localdev_dir_in_parent = Path.cwd().parent / "pikesquares"
+
+        print(f"{localdev_dir_in_parent=}")
+
         localdev_dir = questionary.path(
-            "Provide the path to local repo of PikeSquares: ", 
-            default=os.getcwd(),
+            "Provide the path to local repo of PikeSquares XXXXX: ", 
+            default=localdev_dir_in_parent or os.getcwd(),
             only_directories=True,
             style=custom_style_dope,
         ).ask()
@@ -247,6 +245,8 @@ def main() -> NoReturn:
                 "LOG_DIR": str(LOG_DIR),
                 "CONFIG_DIR": str(CONFIG_DIR),
                 "PLUGINS_DIR": str(PLUGINS_DIR),
+                "EASYRSA_DIR": os.environ.get("PIKESQUARES_EASYRSA_DIR"),
+                "EASYRSA_BIN": os.environ.get("PIKESQUARES_EASYRSA_BIN"),
                 "SENTRY_DSN": os.environ.get("PIKESQUARES_SENTRY_DSN"),
                 "PKI_DIR": str(DATA_DIR / 'pki'),
                 "version": str(version),

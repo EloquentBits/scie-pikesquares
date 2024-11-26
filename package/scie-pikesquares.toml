@@ -45,8 +45,31 @@ name = "scie-pikesquares.bin"
 [[lift.files]]
 name = "tools.pex"
 
-# 
+[[lift.files]]
+name = "uwsgi/uwsgi"
 
+##################################################################
+################### uv
+[[lift.files]]
+name = "uv-macos-x86_64"
+type = "tar.gz"
+digest = { size = 81373, fingerprint = "8ee85c5c569a9efc554a12a89adc9ca676233de4346a42e48646219d65923338" }
+source = { url = "https://github.com/astral-sh/uv/releases/download/0.5.4/uv-x86_64-apple-darwin.tar.gz", lazy = true }
+
+[[lift.files]]
+name = "uv-macos-aarch64"
+type = "tar.gz"
+digest = { size = 81373, fingerprint = "0b1bb612e4beff00ba7da9bb46402219ba42062e1fdcb31529ddeb97251186cb" }
+source = { url = "https://github.com/astral-sh/uv/releases/download/0.5.4/uv-aarch64-apple-darwin.tar.gz", lazy = true }
+
+[[lift.files]]
+name = "uv-linux-x86_64"
+type = "tar.gz"
+digest = { size = 14486696, fingerprint = "c5b63d1cd0a894246195250c034f9d82d646dc8f718f1f424cec2bb1a42e7b17" }
+source = { url = "https://github.com/astral-sh/uv/releases/download/0.5.4/uv-x86_64-unknown-linux-gnu.tar.gz", lazy = true }
+
+##################################################################
+################### process compose #####
 [[lift.files]]
 name = "process-compose-macos-x86_64"
 type = "tar.gz"
@@ -65,7 +88,8 @@ type = "tar.gz"
 digest = { size = 81373, fingerprint = "2122033a7d18c08e998e51f1aa9380b49369e662482e60b1045b468441dba55c" }
 source = { url = "https://github.com/F1bonacc1/process-compose/releases/download/v1.40.1/process-compose_linux_amd64.tar.gz", lazy = true }
 
-
+##################################################################
+################### EASYRSA ######################################
 [[lift.files]]
 name = "easyrsa"
 type = "tar.gz"
@@ -81,12 +105,14 @@ source = { url = "https://github.com/OpenVPN/easy-rsa/releases/download/v3.2.1/E
 
 #"{scie.platform}",
 
-# Boot
+##################################################################
+################### Boot #########################################
 [[lift.commands]]
 description = "Detects the current PikeSquares installation and launches it."
 exe = "{scie-pikesquares.bin}"
 
-# Run PikeSquares
+##################################################################
+################### Run PikeSquares ##############################
 [[lift.commands]]
 name = "pikesquares"
 # No description because this command shouldn't render in the help output (it's invoked as
@@ -100,15 +126,19 @@ PIKESQUARES_DATA_DIR = "{scie.bindings.install:PIKESQUARES_DATA_DIR}"
 PIKESQUARES_BUILDROOT_OVERRIDE = "{scie.bindings.configure:PIKESQUARES_BUILDROOT_OVERRIDE}"
 PIKESQUARES_SCIE_BINDINGS = "{scie.bindings}"
 PIKESQUARES_EASYRSA_DIR = "{easyrsa}"
+PIKESQUARES_EASYRSA_BIN = "{easyrsa}/EasyRSA-3.2.1/easyrsa"
 PIKESQUARES_SENTRY_DSN = "123"
+PIKESQUARES_PYTHON_BIN = "#{cpython:python}"
 #PC_PORT_NUM = "9555"
 #CADDY_DIR = "{caddy}"
 
-[lift.commands.env.replace]
+#[lift.commands.env.replace]
 #_PIKESQUARES_SERVER_EXE = "{scie.bindings.install:PIKESQUARES_SERVER_EXE}"
-PEX_ROOT = "{scie.bindings}/pex_root"
-PEX_PYTHON_PATH = "#{cpython:python}"
+#PEX_ROOT = "{scie.bindings}/pex_root"
+#PEX_PYTHON_PATH = "#{cpython:python}"
 
+##################################################################
+################### process-compose    ###########################
 [[lift.commands]]
 name = "process-compose-up"
 description = "Launch process manager"
@@ -123,14 +153,18 @@ args = [
 ]
 [lift.commands.env.default]
 PIKESQUARES_VERSION = "{scie.bindings.configure:PIKESQUARES_VERSION}"
-PIKESQUARES_PYTHON_PATH = "{scie.bindings.install:VIRTUAL_ENV}/bin/python"
+PIKESQUARES_PYTHON_BIN = "{scie.bindings.install:VIRTUAL_ENV}/bin/python"
+#PIKESQUARES_PYTHON_BIN = "#{cpython:python}"
 PIKESQUARES_SERVER_EXE = "{scie.bindings.install:PIKESQUARES_SERVER_EXE}"
 PIKESQUARES_DATA_DIR = "{scie.bindings.install:PIKESQUARES_DATA_DIR}"
+PIKESQUARES_CONFIG_DIR = "{scie.bindings.install:PIKESQUARES_CONFIG_DIR}"
 PIKESQUARES_LOG_DIR = "{scie.bindings.install:PIKESQUARES_LOG_DIR}"
 PIKESQUARES_BUILDROOT_OVERRIDE = "{scie.bindings.configure:PIKESQUARES_BUILDROOT_OVERRIDE}"
 PIKESQUARES_SCIE_BINDINGS = "{scie.bindings}"
 PIKESQUARES_EASYRSA_DIR = "{easyrsa}"
+PIKESQUARES_EASYRSA_BIN = "{easyrsa}/EasyRSA-3.2.1/easyrsa"
 PIKESQUARES_SENTRY_DSN = "123"
+PIKESQUARES_UWSGI_BIN = "{uwsgi/uwsgi}"
 PC_PORT_NUM = "9555"
 #CADDY_DIR = "{caddy}"
 
@@ -138,23 +172,45 @@ PC_PORT_NUM = "9555"
 name = "process-compose-attach"
 description = "Launch process manager"
 exe = "{process-compose-{scie.platform}}/process-compose"
-# {scie.file.<name>}
-# {scie.file.{env.var.FILE_NAME}}
 args = ["attach"]
+
 [lift.commands.env.default]
 PIKESQUARES_VERSION = "{scie.bindings.configure:PIKESQUARES_VERSION}"
-PIKESQUARES_PYTHON_PATH = "{scie.bindings.install:VIRTUAL_ENV}/bin/python"
+PIKESQUARES_PYTHON_BIN = "{scie.bindings.install:VIRTUAL_ENV}/bin/python"
+#PIKESQUARES_PYTHON_BIN = "#{cpython:python}"
 PIKESQUARES_SERVER_EXE = "{scie.bindings.install:PIKESQUARES_SERVER_EXE}"
 PIKESQUARES_DATA_DIR = "{scie.bindings.install:PIKESQUARES_DATA_DIR}"
 PIKESQUARES_LOG_DIR = "{scie.bindings.install:PIKESQUARES_LOG_DIR}"
 PIKESQUARES_BUILDROOT_OVERRIDE = "{scie.bindings.configure:PIKESQUARES_BUILDROOT_OVERRIDE}"
 PIKESQUARES_SCIE_BINDINGS = "{scie.bindings}"
 PIKESQUARES_EASYRSA_DIR = "{easyrsa}"
+PIKESQUARES_EASYRSA_BIN = "{easyrsa}/EasyRSA-3.2.1/easyrsa"
 PIKESQUARES_SENTRY_DSN = "123"
 PC_PORT_NUM = "9555"
 #CADDY_DIR = "{caddy}"
 
-# Bootstrap Tools
+[[lift.commands]]
+name = "process-compose-down"
+description = "Launch process manager"
+exe = "{process-compose-{scie.platform}}/process-compose"
+args = ["down"]
+
+[lift.commands.env.default]
+PIKESQUARES_VERSION = "{scie.bindings.configure:PIKESQUARES_VERSION}"
+PIKESQUARES_PYTHON_BIN = "{scie.bindings.install:VIRTUAL_ENV}/bin/python"
+PIKESQUARES_SERVER_EXE = "{scie.bindings.install:PIKESQUARES_SERVER_EXE}"
+PIKESQUARES_DATA_DIR = "{scie.bindings.install:PIKESQUARES_DATA_DIR}"
+PIKESQUARES_LOG_DIR = "{scie.bindings.install:PIKESQUARES_LOG_DIR}"
+PIKESQUARES_BUILDROOT_OVERRIDE = "{scie.bindings.configure:PIKESQUARES_BUILDROOT_OVERRIDE}"
+PIKESQUARES_SCIE_BINDINGS = "{scie.bindings}"
+PIKESQUARES_EASYRSA_DIR = "{easyrsa}"
+PIKESQUARES_EASYRSA_BIN = "{easyrsa}/EasyRSA-3.2.1/easyrsa"
+PIKESQUARES_SENTRY_DSN = "123"
+PC_PORT_NUM = "9555"
+#CADDY_DIR = "{caddy}"
+
+##################################################################
+################### Bootstrap Tools
 [[lift.commands]]
 name = "bootstrap-tools"
 description = "Introspection tools for the PikeSquares bootstrap process."
@@ -175,7 +231,9 @@ env.remove_re = [
 PEX_ROOT = "{scie.bindings}/pex_root"
 PEX_PYTHON_PATH = "#{cpython:python}"
 
-# Configure PikeSquares
+
+##################################################################
+################### Configure PikeSquares
 [[lift.bindings]]
 name = "configure"
 description = "Configure PikeSquares"
@@ -195,12 +253,17 @@ env.remove_re = [
 
 [lift.bindings.env.default]
 PIKESQUARES_VERSION_PROMPT_SALT = "{scie.env.PIKESQUARES_VERSION_PROMPT_SALT}"
+PIKESQUARES_UV_BIN = "{uv-{scie.platform}}/uv-{scie.platform.arch}-unknown-{scie.platform.os}-gnu/uv"
+SCIE_LIFT_FILE = "{scie.lift}"
+PIKESQUARES_PYTHON_BIN = "#{cpython:python}"
 
-[lift.bindings.env.replace]
-PEX_ROOT = "{scie.bindings}/pex_root"
-PEX_PYTHON_PATH = "#{cpython:python}"
 
-# Install PikeSquares
+#[lift.bindings.env.replace]
+#PEX_ROOT = "{scie.bindings}/pex_root"
+#PEX_PYTHON_PATH = "#{cpython:python}"
+
+##################################################################
+################### Install PikeSquares
 [[lift.bindings]]
 name = "install"
 description = """\
@@ -222,11 +285,21 @@ env.remove_re = [
     "PEX_.*",
 ]
 
-[lift.bindings.env.replace]
-PEX_ROOT = "{scie.bindings}/pex_root"
-PEX_PYTHON_PATH = "#{cpython:python}"
+[lift.bindings.env.default]
+# uv-x86_64-unknown-linux-gnu
+# uv-aarch64-apple-darwin
+# uv-x86_64-apple-darwin
+PIKESQUARES_UV_BIN = "{uv-{scie.platform}}/uv-{scie.platform.arch}-unknown-{scie.platform.os}-gnu/uv"
+PIKESQUARES_PYTHON_BIN = "#{cpython:python}"
+UV_PYTHON = "#{cpython:python}"
+#{process-compose-{scie.platform}}
 
-# Self Update
+#[lift.bindings.env.replace]
+#PEX_ROOT = "{scie.bindings}/pex_root"
+#PEX_PYTHON_PATH = "#{cpython:python}"
+
+##################################################################
+################### Self Update
 [[lift.commands]]
 name = "update"
 description = "Update scie-pikesquares."
@@ -255,7 +328,8 @@ env.remove_re = [
 PEX_ROOT = "{scie.bindings}/pex_root"
 PEX_PYTHON_PATH = "#{cpython:python}"
 
-# Self Info
+##################################################################
+################### Self Info
 [[lift.bindings]]
 name = "scie-pikesquares-info"
 description = "Records information about the current scie-pikesquares binary."

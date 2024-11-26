@@ -3,7 +3,7 @@ use std::ffi::{OsStr, OsString};
 use std::fmt::Debug;
 use std::path::PathBuf;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, Context, Result};
 use build_root::BuildRoot;
 use log::{info, trace};
 use logging_timer::{time, timer, Level};
@@ -73,9 +73,10 @@ impl Process {
 }
 
 fn env_version(env_var_name: &str) -> Result<Option<String>> {
-    let raw_version = env::var_os(env_var_name).unwrap_or(OsString::new());
+
+    let raw_version = env::var_os(env_var_name).unwrap_or_default();
     if raw_version.len() == 0 {
-        // setting PIKESQUARES_VERSION= or PIKESQUARES_SHA= behaves the same as not setting them
+        // setting PIKESQUARES_VERSION= behaves the same as not setting it
         Ok(None)
     } else {
         Ok(Some(raw_version.into_string().map_err(|raw| {
@@ -114,7 +115,6 @@ impl ScieBoot {
         String::from_utf8(shell_quote::bash::escape(value))
             .context("Shell-quoted value could not be interpreted as UTF-8.")
     }
-
     #[cfg(windows)]
     fn quote<T: Into<OsString> + Debug>(_value: T) -> Result<String> {
         // The shell_quote crate assumes unix and fails to compile on Windows.
@@ -168,37 +168,11 @@ fn get_pikesquares_process() -> Result<Process> {
             (None, None, None, false)
         };
 
-    let env_pikesquares_sha = env_version("PIKESQUARES_SHA")?;
     let env_pikesquares_version = env_version("PIKESQUARES_VERSION")?;
-    if let Some(pikesquares_sha) = &env_pikesquares_sha {
-        // when support for PIKESQUARES_SHA is fully removed, PIKESQUARES_SHA_FIND_LINKS can be removed too
-        eprintln!(
-          "\
-DEPRECATED: Support for PIKESQUARES_SHA=... will be removed in a future version of the `pikesquares` launcher.
-
-The artifacts for PIKESQUARES_SHA are no longer published for new commits. This invocation set PIKESQUARES_SHA={pikesquares_sha}.
-
-To resolve, do one of:
-- Use a released version of Pants.
-- Run pants from sources (for example: `PIKESQUARES_SOURCE=/path/to/pants-checkout pants ...`).
-- If these are not appropriate, let us know what you're using it for: <https://www.pantsbuild.org/docs/getting-help>.
-"
-        );
-
-        if let Some(pikesquares_version) = &env_pikesquares_version {
-            bail!(
-                "Both PIKESQUARES_SHA={pikesquares_sha} and PIKESQUARES_VERSION={pikesquares_version} were set. \
-                Please choose one.",
-            )
-        }
-    }
-
     let pikesquares_version = if let Some(env_version) = env_pikesquares_version {
         Some(env_version)
-    } else if env_pikesquares_sha.is_none() {
-        configured_pikesquares_version.clone()
     } else {
-        None
+        configured_pikesquares_version.clone()
     };
 
     if delegate_bootstrap && pikesquares_version.is_none() {
@@ -261,7 +235,7 @@ To resolve, do one of:
             env.push(("_PIKESQUARES_VERSION_OVERRIDE".into(), version.clone().into()));
         }
         env.push(("PIKESQUARES_VERSION".into(), version.into()));
-    } else if env_pikesquares_sha.is_none() {
+    } else {
         // Ensure the install binding always re-runs when no PikeSquares version is found so that the
         // the user can be prompted with configuration options.
         env.push((
