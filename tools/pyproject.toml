@@ -6,14 +6,21 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scie-pikesquares"
-dynamic = [
-  "dependencies",
+dependencies = [
+    "ansicolors>=1.1.8",
+    "conscript>=0.1.8",
+    "packaging>=24.2",
+    "platformdirs>=4.3.6",
+    "questionary>=2.0.1",
+    "setuptools>=75.6.0",
+    "tinydb>=4.8.2",
+    "tomlkit>=0.13.2",
 ]
 
 version = "0.0.3"
 description = ''
 #readme = "README.md"
-requires-python = "== 3.12"
+requires-python = "==3.12.*"
 
 keywords = []
 authors = [

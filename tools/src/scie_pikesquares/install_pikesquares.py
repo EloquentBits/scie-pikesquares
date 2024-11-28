@@ -69,8 +69,59 @@ def install_pikesquares_from_pex(
 
 def install_pikesquares_localdev(
     venv_dir: Path,
+    localdev_dir: Path | None,
+) -> None:
+
+    uv_bin = Path(os.environ.get("PIKESQUARES_UV_BIN"))
+    py_bin = Path(os.environ.get("PIKESQUARES_PYTHON_BIN"))
+
+    if not uv_bin.exists():
+        print(f"unable to locate uv @ {uv_bin}")
+        return
+
+    if not py_bin.exists():
+        print(f"unable to locate python @ {py_bin}")
+        return
+
+    try:
+        compl = subprocess.run(
+            args=[
+                str(uv_bin),
+                'sync',
+                "--python",
+                str(py_bin),
+                "--verbose",
+            ],
+            env={
+                "UV_PROJECT_ENVIRONMENT": str(venv_dir),
+            },
+            cwd=localdev_dir if localdev_dir else None,
+            capture_output=True,
+            check=True,
+            #user="",
+        )
+    except subprocess.CalledProcessError as cperr:
+        print(f"uv failed to sync dependencies: {cperr.stderr.decode()}")
+        return
+
+    if compl.returncode != 0:
+        print("unable to install dependencies")
+
+    #uv_venv(venv_dir, uv_bin, py_bin, localdev_dir)
+    #uv_sync(venv_dir, uv_bin, py_bin, localdev_dir)
+    #if localdev_dir:
+    #    uv_add_pikesquares_editable(venv_dir, uv_bin, py_bin, localdev_dir)
+
+###############################################################################
+########################## legacy pip-based workflow
+
+def install_pikesquares_localdev_pip(
+    venv_dir: Path,
+    log_dir: Path,
     localdev_dir: str,
 ) -> None:
+    print(f"{os.environ.get('PIKESQUARES_UV_DIR')=}")
+    print(f"{os.environ.get('PIKESQUARES_PYTHON_BIN')=}")
 
     subprocess.run(
         args=[
@@ -94,7 +145,7 @@ def install_pikesquares_localdev(
             "--disable-pip-version-check",
             "--no-python-version-warning",
             "--log",
-            str(venv_dir / "pikesquares-install.log"),
+            str(log_dir / "pikesquares-install.log"),
             "install",
             #"--quiet",
             "--requirement",
@@ -112,7 +163,7 @@ def install_pikesquares_localdev(
             "--disable-pip-version-check",
             "--no-python-version-warning",
             "--log",
-            str(venv_dir / "pikesquares-install.log"),
+            str(log_dir / "pikesquares-install.log"),
             "install",
             #"--quiet",
             "--editable",
@@ -137,7 +188,7 @@ def install_pikesquares_localdev(
             "--disable-pip-version-check",
             "--no-python-version-warning",
             "--log",
-            str(venv_dir / "pikesquares-install.log"),
+            str(log_dir / "pikesquares-install.log"),
             "install",
             #"--quiet",
             "--trusted-host",
@@ -177,7 +228,13 @@ def main() -> NoReturn:
     #python_version = ".".join(map(str, sys.version_info[:3]))
     #debug(f"PikeSquares itself is using: {sys.implementation.name} {python_version}")
 
+    APP_NAME="pikesquares"
     venv_dir = venvs_dir / str(version)
+    pikesquares_server_exe = str(venv_dir / "bin" / "pikesquares")
+    current_user: str = pwd.getpwuid(os.getuid()).pw_name
+    data_dir = platformdirs.user_data_path(APP_NAME, current_user)
+    log_dir = platformdirs.user_log_path(APP_NAME, current_user)
+    config_dir = platformdirs.user_config_path(APP_NAME, current_user)
 
     #if "dev" in str(version):
     #    localdev_dir = os.environ.get("PIKESQUARES_LOCALDEV_DIR")
@@ -191,7 +248,7 @@ def main() -> NoReturn:
         if install_deps:
             install_pikesquares_localdev(
                 venv_dir=venv_dir,
-                localdev_dir=options.localdev_dir
+                localdev_dir=Path(options.localdev_dir)
             )
     else:
         install_pikesquares_from_pex(
@@ -205,17 +262,13 @@ def main() -> NoReturn:
         )
     info(f"New virtual environment successfully created at {venv_dir}")
 
-    APP_NAME="pikesquares"
-    pikesquares_server_exe = str(venv_dir / "bin" / "pikesquares")
-    current_user: str = pwd.getpwuid(os.getuid()).pw_name
-    data_dir = platformdirs.user_data_path(APP_NAME, current_user)
-    log_dir = platformdirs.user_log_path(APP_NAME, current_user)
 
     with open(env_file, "a") as fp:
         print(f"VIRTUAL_ENV={venv_dir}", file=fp)
         print(f"PIKESQUARES_SERVER_EXE={pikesquares_server_exe}", file=fp)
         print(f"PIKESQUARES_DATA_DIR={data_dir}", file=fp)
         print(f"PIKESQUARES_LOG_DIR={log_dir}", file=fp)
+        print(f"PIKESQUARES_CONFIG_DIR={config_dir}", file=fp)
         print(f"PIKESQUARES_VERSION={version}", file=fp)
 
     with TinyDB(data_dir / "device-db.json") as db:
