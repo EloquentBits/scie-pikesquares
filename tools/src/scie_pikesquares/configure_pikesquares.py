@@ -3,7 +3,8 @@ from __future__ import annotations
 import os
 import pwd
 import sys
-#import shutil
+import subprocess
+import shutil
 #import subprocess
 from argparse import ArgumentParser
 from pathlib import Path
@@ -24,6 +25,10 @@ from scie_pikesquares.pikesquares_version import (
 from scie_pikesquares.ptex import Ptex
 
 
+class UWSGIBuildError(Exception):
+    pass
+
+
 def prompt(message: str, default: bool) -> bool:
     raw_answer = input(f"{message} ({'Y/n' if default else 'N/y'}): ")
     answer = raw_answer.strip().lower()
@@ -31,6 +36,7 @@ def prompt(message: str, default: bool) -> bool:
         return default
     return answer in ("y", "yes")
 
+"""
 
 def prompt_for_localdev_dir() -> Path | None:
     #cwd = os.getcwd()
@@ -50,6 +56,7 @@ def prompt_for_localdev_dir() -> Path | None:
         if Path(answer).exists():
             return Path(answer)
 
+"""
 
 custom_style_dope = questionary.Style(
     [
@@ -69,6 +76,87 @@ def get_latest_config(db_path):
                 Query().version == max([c.get('version') for c in db.table("configs").all()])
             )[0]
 
+def init_submodules():
+    cmd = "git submodule update --init --recursive"
+    try:
+        compl = subprocess.run(
+            cmd,
+            env={},
+            shell=True,
+            cwd=Path.cwd(),
+            capture_output=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as cperr:
+        print(f"failed to init submodules: {cperr.stderr.decode()}")
+        return
+
+    if compl.returncode != 0:
+        print("unable to init submodules")
+
+    #Submodule 'uwsgi' (git@github.com:unbit/uwsgi.git) registered for path 'uwsgi'
+    #Cloning into '/home/pk/dev/eqb/tmp/scie-pikesquares/uwsgi'...
+    #Submodule path 'uwsgi': checked out '02a2fc47c7cd32a5c0d1e07808f36cbe1533ecbe'
+
+    print(compl.stderr.decode())
+    print(compl.stdout.decode())
+
+def build_plugin(plugin:str, python_bin: Path, plugins_dir: Path):
+    plugin_name = plugin
+    if plugin == "python":
+        py_version = "312"
+        plugin_name = f"python{py_version}"
+    
+    try:
+        compl = subprocess.run(
+            f"{python_bin.resolve()} ./uwsgiconfig.py --plugin plugins/{plugin} pikesquares {plugin_name}",
+            env=os.environ,
+            shell=True,
+            cwd=Path.cwd() / "uwsgi",
+            capture_output=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as cperr:
+        print(f"failed to build uWSGI plugin '{plugin}': {cperr.stderr.decode()}")
+        return
+
+    if compl.returncode != 0:
+        print(f"unable to build uWSGI plugin '{plugin}'")
+
+    print(compl.stderr.decode())
+    print(compl.stdout.decode())
+
+    dest = Path(f"uwsgi/{plugin_name}_plugin.so").resolve()
+    src = (Path(plugins_dir) / f"{plugin_name}_plugin.so").resolve()
+    try:
+        src.symlink_to(dest)
+    except FileExistsError:
+        pass
+
+
+def build_uwsgi(python_bin: Path):
+    shutil.copy(Path("pikesquares.ini"), Path("uwsgi/buildconf/pikesquares.ini"))
+    try:
+        compl = subprocess.run(
+            f"{python_bin.resolve()} ./uwsgiconfig.py --build pikesquares",
+            env=os.environ,
+            shell=True,
+            cwd=Path.cwd() / "uwsgi",
+            capture_output=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as cperr:
+        print(f"failed to build uWSGI binary: {cperr.stderr.decode()}")
+        return
+
+    if compl.returncode != 0:
+        print("unable to build uWSGI binary")
+
+    print(compl.stderr.decode())
+    print(compl.stdout.decode())
+
+
+
 def main() -> NoReturn:
     parser = ArgumentParser()
     get_ptex = Ptex.add_options(parser)
@@ -83,10 +171,10 @@ def main() -> NoReturn:
     #print(f"scie-pikesquares: {argv0=}")
 
     for key, value in os.environ.items():
-        if key.startswith(('PIKESQUARES', 'SCIE', 'PEX')):
+        if key.startswith(("PIKESQUARES", "SCIE", "PEX", "UV")):
             print(f' === {key}: {value}')
-        else:
-            print(f'{key}: {value}')
+        #else:
+        #    print(f'{key}: {value}')
 
     env_file = os.environ.get("SCIE_BINDING_ENV")
     localdev_dir = None
@@ -95,6 +183,7 @@ def main() -> NoReturn:
         fatal("Expected SCIE_BINDING_ENV to be set in the environment")
 
     debug(f"lift.bindings.configure: {options.pikesquares_version=}")
+    print(f"lift.bindings.configure: {options.pikesquares_version=}")
 
     python = "cpython312"
     APP_NAME = "pikesquares"
@@ -207,11 +296,9 @@ def main() -> NoReturn:
         if (Path.cwd().parent / "pikesquares").exists():
             localdev_dir_in_parent = Path.cwd().parent / "pikesquares"
 
-        print(f"{localdev_dir_in_parent=}")
-
         localdev_dir = questionary.path(
-            "Provide the path to local repo of PikeSquares XXXXX: ", 
-            default=localdev_dir_in_parent or os.getcwd(),
+            "Provide the path to local repo of PikeSquares: ", 
+            default=str(localdev_dir_in_parent) or os.getcwd(),
             only_directories=True,
             style=custom_style_dope,
         ).ask()
@@ -219,6 +306,24 @@ def main() -> NoReturn:
         if not localdev_dir:
             warn("could not read the PikeSquares local dev directory. exiting.")
             sys.exit(1)
+
+        uwsgi_dir = Path("uwsgi")
+        if not uwsgi_dir.exists():
+            init_submodules()
+            print("unable to init git submodules")
+            sys.exit(1)
+
+        #python_bin = os.environ.get('PIKESQUARES_PYTHON_BIN')
+        python_bin = Path("/usr/bin/python3")
+        if not python_bin.exists():
+            raise UWSGIBuildError(f"cannot locate python at {python_bin}")
+
+        build_uwsgi(python_bin)
+        build_plugin("corerouter", python_bin, PLUGINS_DIR)
+        build_plugin("http", python_bin, PLUGINS_DIR)
+        build_plugin("python", python_bin, PLUGINS_DIR)
+        build_plugin("logfile", python_bin, PLUGINS_DIR)
+
     else:
         resolve_info = determine_latest_stable_version(ptex=get_ptex(options))
 
