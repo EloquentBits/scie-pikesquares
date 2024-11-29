@@ -124,7 +124,10 @@ name = "pikesquares"
 # description = "Runs a hermetic PikeSquares installation."
 exe = "{scie.bindings.install:PIKESQUARES_SERVER_EXE}"
 
-[lift.commands.env.default] 
+
+
+[lift.commands.env.default]
+PIKESQUARES_PC_DIR = "{process-compose-macos-x86_64}" 
 PIKESQUARES_VERSION = "{scie.bindings.configure:PIKESQUARES_VERSION}"
 PIKESQUARES_DATA_DIR = "{scie.bindings.install:PIKESQUARES_DATA_DIR}"
 PIKESQUARES_BUILDROOT_OVERRIDE = "{scie.bindings.configure:PIKESQUARES_BUILDROOT_OVERRIDE}"
