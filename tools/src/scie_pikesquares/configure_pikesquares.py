@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import json
 import pwd
 import sys
 import subprocess
@@ -311,19 +312,18 @@ def main() -> NoReturn:
         if not uwsgi_dir.exists():
             init_submodules()
             print("unable to init git submodules")
-            sys.exit(1)
-
-        #python_bin = os.environ.get('PIKESQUARES_PYTHON_BIN')
-        python_bin = Path("/usr/bin/python3")
-        if not python_bin.exists():
-            raise UWSGIBuildError(f"cannot locate python at {python_bin}")
-
-        build_uwsgi(python_bin)
-        build_plugin("corerouter", python_bin, PLUGINS_DIR)
-        build_plugin("http", python_bin, PLUGINS_DIR)
-        build_plugin("python", python_bin, PLUGINS_DIR)
-        build_plugin("logfile", python_bin, PLUGINS_DIR)
-
+            #python_bin = os.environ.get('PIKESQUARES_PYTHON_BIN')
+            python_bin = Path("/usr/bin/python3")
+            if not python_bin.exists():
+                raise UWSGIBuildError(f"cannot locate python at {python_bin}")
+            try:
+                build_uwsgi(python_bin)
+                build_plugin("corerouter", python_bin, PLUGINS_DIR)
+                build_plugin("http", python_bin, PLUGINS_DIR)
+                build_plugin("python", python_bin, PLUGINS_DIR)
+                build_plugin("logfile", python_bin, PLUGINS_DIR)
+            except Exception as exc:
+                raise UWSGIBuildError(f"unable to build uWSGI {str(exc)}")
     else:
         resolve_info = determine_latest_stable_version(ptex=get_ptex(options))
 

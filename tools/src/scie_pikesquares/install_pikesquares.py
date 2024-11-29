@@ -3,6 +3,7 @@ from __future__ import annotations
 #import json
 import logging
 import os
+import json
 import pwd
 #import stat
 import subprocess
@@ -67,18 +68,36 @@ def install_pikesquares_from_pex(
             check=True,
         )
 
+def get_uv_bin(platform):
+    # uv-macos-x86_64/uv-x86_64-apple-darwin/
+    # uv-linux-x86_64/uv-x86_64-unknown-linux-gnu
+    # uv-macos-aarch64/uv-aarch64-apple-darwin/
+
+    with open(os.environ.get("SCIE_LIFT_FILE"), 'r') as lift_file:
+        
+        lift_json  =json.loads(lift_file.read())
+        lift_files = lift_json['scie']['lift']['files']
+        file_name = f"uv-{platform}"
+        uv_file = next(filter(lambda x: x.get("name") == file_name, lift_files))
+        uv_dir = uv_file.get('key')
+        uv_bin = Path(uv_dir) / "uv"
+        print(f"{uv_bin=}")
+        return uv_bin
+
+
 def install_pikesquares_localdev(
     venv_dir: Path,
     localdev_dir: Path | None,
 ) -> None:
 
-    uv_bin = Path(os.environ.get("PIKESQUARES_UV_BIN"))
-    py_bin = Path(os.environ.get("PIKESQUARES_PYTHON_BIN"))
-
+    #uv_bin = Path(os.environ.get("PIKESQUARES_UV_BIN"))
+    #platform = "linux-x86_64"
+    platform = f"{os.uname().sysname.lower()}-{os.uname().machine}"
+    uv_bin = Path(os.environ.get("PIKESQUARES_UV_ROOT")) / get_uv_bin(platform)
     if not uv_bin.exists():
-        print(f"unable to locate uv @ {uv_bin}")
-        return
+        raise Exception(f"unable to locate uv @ {uv_bin}")
 
+    py_bin = Path(os.environ.get("PIKESQUARES_PYTHON_BIN"))
     if not py_bin.exists():
         print(f"unable to locate python @ {py_bin}")
         return
@@ -106,6 +125,15 @@ def install_pikesquares_localdev(
 
     if compl.returncode != 0:
         print("unable to install dependencies")
+
+    print(compl.stderr.decode())
+    print(compl.stdout.decode())
+
+
+    cmd = f"""\
+            UV_PROJECT_ENVIRONMENT={str(venv_dir)} {str(uv_bin)} sync --python {str(py_bin)} --verbose
+            """
+    print(cmd)
 
     #uv_venv(venv_dir, uv_bin, py_bin, localdev_dir)
     #uv_sync(venv_dir, uv_bin, py_bin, localdev_dir)

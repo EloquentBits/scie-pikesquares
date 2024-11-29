@@ -47,23 +47,27 @@ name = "tools.pex"
 
 [[lift.files]]
 name = "uwsgi/uwsgi"
+key = "uwsgi_bin"
 
 ##################################################################
 ################### uv
 [[lift.files]]
 name = "uv-macos-x86_64"
+key = "uv-x86_64-apple-darwin"
 type = "tar.gz"
-digest = { size = 81373, fingerprint = "8ee85c5c569a9efc554a12a89adc9ca676233de4346a42e48646219d65923338" }
+digest = { size = 81373, fingerprint = "f879864954b2229611155bb201088d0f09becf1436b0ec8707c8f560e98e9209" }
 source = { url = "https://github.com/astral-sh/uv/releases/download/0.5.4/uv-x86_64-apple-darwin.tar.gz", lazy = true }
 
 [[lift.files]]
 name = "uv-macos-aarch64"
+key = "uv-aarch64-apple-darwin"
 type = "tar.gz"
 digest = { size = 81373, fingerprint = "0b1bb612e4beff00ba7da9bb46402219ba42062e1fdcb31529ddeb97251186cb" }
 source = { url = "https://github.com/astral-sh/uv/releases/download/0.5.4/uv-aarch64-apple-darwin.tar.gz", lazy = true }
 
 [[lift.files]]
 name = "uv-linux-x86_64"
+key = "uv-x86_64-unknown-linux-gnu"
 type = "tar.gz"
 digest = { size = 14486696, fingerprint = "c5b63d1cd0a894246195250c034f9d82d646dc8f718f1f424cec2bb1a42e7b17" }
 source = { url = "https://github.com/astral-sh/uv/releases/download/0.5.4/uv-x86_64-unknown-linux-gnu.tar.gz", lazy = true }
@@ -253,7 +257,19 @@ env.remove_re = [
 
 [lift.bindings.env.default]
 PIKESQUARES_VERSION_PROMPT_SALT = "{scie.env.PIKESQUARES_VERSION_PROMPT_SALT}"
+
 PIKESQUARES_UV_BIN = "{uv-{scie.platform}}/uv-{scie.platform.arch}-unknown-{scie.platform.os}-gnu/uv"
+
+#PIKESQUARES_UV_BIN = "{uv-{scie.platform}}/{scie.file./uv"
+
+# scie.os - macos linux
+# scie.arch - x86_64 aarch64
+# scie.platform - macos-x86_64 linux-x86_64 macos-aarch64
+
+# uv-macos-x86_64/uv-x86_64-apple-darwin/
+# uv-linux-x86_64/uv-x86_64-unknown-linux-gnu
+# uv-macos-aarch64/uv-aarch64-apple-darwin/
+
 SCIE_LIFT_FILE = "{scie.lift}"
 PIKESQUARES_PYTHON_BIN = "#{cpython:python}"
 
@@ -286,10 +302,12 @@ env.remove_re = [
 ]
 
 [lift.bindings.env.default]
+SCIE_LIFT_FILE = "{scie.lift}"
 # uv-x86_64-unknown-linux-gnu
 # uv-aarch64-apple-darwin
 # uv-x86_64-apple-darwin
-PIKESQUARES_UV_BIN = "{uv-{scie.platform}}/uv-{scie.platform.arch}-unknown-{scie.platform.os}-gnu/uv"
+#PIKESQUARES_UV_BIN = "{uv-{scie.platform}}/uv-{scie.platform.arch}-unknown-{scie.platform.os}-gnu/uv"
+PIKESQUARES_UV_ROOT = "{uv-{scie.platform}}"
 PIKESQUARES_PYTHON_BIN = "#{cpython:python}"
 UV_PYTHON = "#{cpython:python}"
 #{process-compose-{scie.platform}}
