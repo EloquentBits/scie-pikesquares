@@ -92,7 +92,9 @@ def install_pikesquares_localdev(
 
     #uv_bin = Path(os.environ.get("PIKESQUARES_UV_BIN"))
     #platform = "linux-x86_64"
-    platform = f"{os.uname().sysname.lower()}-{os.uname().machine}"
+    os_name =  "macos" os.uname().sysname.lower() == "darwin" else "linux"
+
+    platform = f"{os_name}-{os.uname().machine}"
     uv_bin = Path(os.environ.get("PIKESQUARES_UV_ROOT")) / get_uv_bin(platform)
     if not uv_bin.exists():
         raise Exception(f"unable to locate uv @ {uv_bin}")
