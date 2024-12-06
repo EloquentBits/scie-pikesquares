@@ -124,18 +124,18 @@ name = "pikesquares"
 # description = "Runs a hermetic PikeSquares installation."
 exe = "{scie.bindings.install:PIKESQUARES_SERVER_EXE}"
 
-
-
 [lift.commands.env.default]
 PIKESQUARES_PC_DIR = "{process-compose-macos-x86_64}" 
 PIKESQUARES_VERSION = "{scie.bindings.configure:PIKESQUARES_VERSION}"
 PIKESQUARES_DATA_DIR = "{scie.bindings.install:PIKESQUARES_DATA_DIR}"
+PIKESQUARES_VIRTUAL_ENV = "{scie.bindings.install:VIRTUAL_ENV}"
 PIKESQUARES_BUILDROOT_OVERRIDE = "{scie.bindings.configure:PIKESQUARES_BUILDROOT_OVERRIDE}"
 PIKESQUARES_SCIE_BINDINGS = "{scie.bindings}"
 PIKESQUARES_EASYRSA_DIR = "{easyrsa}"
 PIKESQUARES_EASYRSA_BIN = "{easyrsa}/EasyRSA-3.2.1/easyrsa"
 PIKESQUARES_SENTRY_DSN = "123"
 PIKESQUARES_PYTHON_BIN = "#{cpython:python}"
+PIKESQUARES_UWSGI_BIN = "{uwsgi/uwsgi}"
 #PC_PORT_NUM = "9555"
 #CADDY_DIR = "{caddy}"
 

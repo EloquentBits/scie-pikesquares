@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import json
 import pwd
 import sys
 import subprocess
