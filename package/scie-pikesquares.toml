@@ -84,7 +84,7 @@ source = { url = "https://github.com/F1bonacc1/process-compose/releases/download
 name = "process-compose-macos-aarch64"
 type = "tar.gz"
 digest = { size = 81373, fingerprint = "0b1bb612e4beff00ba7da9bb46402219ba42062e1fdcb31529ddeb97251186cb" }
-source = { url = "https://github.com/F1bonacc1/process-compose/releases/download/v1.40.1/process-compose_darwin_amd64.tar.gz", lazy = true }
+source = { url = "https://github.com/F1bonacc1/process-compose/releases/download/v1.40.1/process-compose_darwin_armd64.tar.gz", lazy = true }
 
 [[lift.files]]
 name = "process-compose-linux-x86_64"
@@ -125,7 +125,7 @@ name = "pikesquares"
 exe = "{scie.bindings.install:PIKESQUARES_SERVER_EXE}"
 
 [lift.commands.env.default]
-PIKESQUARES_PC_DIR = "{process-compose-macos-x86_64}" 
+PIKESQUARES_PROCESS_COMPOSE_DIR = "{process-compose-{scie.platform}}" 
 PIKESQUARES_VERSION = "{scie.bindings.configure:PIKESQUARES_VERSION}"
 PIKESQUARES_DATA_DIR = "{scie.bindings.install:PIKESQUARES_DATA_DIR}"
 PIKESQUARES_VIRTUAL_ENV = "{scie.bindings.install:VIRTUAL_ENV}"
