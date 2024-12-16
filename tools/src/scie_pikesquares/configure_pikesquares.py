@@ -307,22 +307,23 @@ def main() -> NoReturn:
             warn("could not read the PikeSquares local dev directory. exiting.")
             sys.exit(1)
 
-        uwsgi_dir = Path("uwsgi")
-        if not uwsgi_dir.exists():
-            init_submodules()
-            print("unable to init git submodules")
-            #python_bin = os.environ.get('PIKESQUARES_PYTHON_BIN')
-            python_bin = Path("/usr/bin/python3")
-            if not python_bin.exists():
-                raise UWSGIBuildError(f"cannot locate python at {python_bin}")
-            try:
-                build_uwsgi(python_bin)
-                build_plugin("corerouter", python_bin, PLUGINS_DIR)
-                build_plugin("http", python_bin, PLUGINS_DIR)
-                build_plugin("python", python_bin, PLUGINS_DIR)
-                build_plugin("logfile", python_bin, PLUGINS_DIR)
-            except Exception as exc:
-                raise UWSGIBuildError(f"unable to build uWSGI {str(exc)}")
+        if 0:
+            uwsgi_dir = Path("uwsgi")
+            if not uwsgi_dir.exists():
+                init_submodules()
+                print("unable to init git submodules")
+                #python_bin = os.environ.get('PIKESQUARES_PYTHON_BIN')
+                python_bin = Path("/usr/bin/python3")
+                if not python_bin.exists():
+                    raise UWSGIBuildError(f"cannot locate python at {python_bin}")
+                try:
+                    build_uwsgi(python_bin)
+                    build_plugin("corerouter", python_bin, PLUGINS_DIR)
+                    build_plugin("http", python_bin, PLUGINS_DIR)
+                    build_plugin("python", python_bin, PLUGINS_DIR)
+                    build_plugin("logfile", python_bin, PLUGINS_DIR)
+                except Exception as exc:
+                    raise UWSGIBuildError(f"unable to build uWSGI {str(exc)}")
     else:
         resolve_info = determine_latest_stable_version(ptex=get_ptex(options))
 
@@ -335,7 +336,7 @@ def main() -> NoReturn:
         #print(f"PIKESQUARES_PROCESS_COMPOSE_CONFIG={process_compose_config}", file=fp)
         if localdev_dir:
             print(f"PIKESQUARES_LOCALDEV_DIR={str(localdev_dir)}", file=fp)
-
+    """
     with TinyDB(DATA_DIR / 'device-db.json') as db:
         conf_db = db.table('configs')
         conf_db.upsert(
@@ -357,6 +358,7 @@ def main() -> NoReturn:
             }, 
             Query().version == str(version),
         )
+    """
     sys.exit(0)
 
 

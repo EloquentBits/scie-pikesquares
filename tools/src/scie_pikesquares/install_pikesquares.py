@@ -67,7 +67,7 @@ def install_pikesquares_from_pex(
             check=True,
         )
 
-def get_uv_bin(platform):
+def get_uv_bin_from_lift(platform):
     # uv-macos-x86_64/uv-x86_64-apple-darwin/
     # uv-linux-x86_64/uv-x86_64-unknown-linux-gnu
     # uv-macos-aarch64/uv-aarch64-apple-darwin/
@@ -84,19 +84,77 @@ def get_uv_bin(platform):
         return uv_bin
 
 
-def install_pikesquares_localdev(
+def install_pyuwsgi_wheel(
     venv_dir: Path,
     localdev_dir: Path | None,
 ) -> None:
+    pass
 
+
+def get_uv_bin():
     #uv_bin = Path(os.environ.get("PIKESQUARES_UV_BIN"))
     #platform = "linux-x86_64"
     os_name =  "macos" if os.uname().sysname.lower() == "darwin" else "linux"
 
     platform = f"{os_name}-{os.uname().machine}"
-    uv_bin = Path(os.environ.get("PIKESQUARES_UV_ROOT")) / get_uv_bin(platform)
+    uv_bin = Path(os.environ.get("PIKESQUARES_UV_ROOT")) / get_uv_bin_from_lift(platform)
     if not uv_bin.exists():
-        raise Exception(f"unable to locate uv @ {uv_bin}")
+        fatal(f"unable to locate uv @ {uv_bin}")
+
+    return uv_bin
+
+def install_pyuwsgi(
+    venv_dir: Path,
+    localdev_dir: Path,
+    pyuwsgi_wheel_path: Path | None = None,
+) -> None:
+    py_bin = Path(os.environ.get("PIKESQUARES_PYTHON_BIN"))
+    if not py_bin.exists():
+        fatal(f"unable to locate python @ {py_bin}")
+
+    if pyuwsgi_wheel_path and Path(pyuwsgi_wheel_path).exists():
+        pyuwsgi_wheel = str(pyuwsgi_wheel_path) 
+    else:
+        pyuwsgi_wheel = localdev_dir / "pyuwsgi-2.0.28.post1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+
+    try:
+        compl = subprocess.run(
+            args=[
+                str(get_uv_bin()),
+                "pip",
+                "install",
+                str(pyuwsgi_wheel),
+                "--verbose",
+            ],
+            env={
+                "VIRTUAL_ENV": str(venv_dir),
+                "UV_PROJECT_ENVIRONMENT": str(venv_dir),
+            },
+            cwd=localdev_dir if localdev_dir else None,
+            capture_output=True,
+            check=True,
+            #user="",
+        )
+        print(compl.stdout.decode())
+        print(" ".join(compl.args))
+
+        if compl.stderr:
+            print(compl.stderr.decode())
+
+        #if compl.returncode != 0:
+        #    print(compl.stderr.decode())
+        #    fatal("unable to install pypuwsgi wheel")
+        #else:
+        #    info("pyuwsgi wheel installed")
+
+    except subprocess.CalledProcessError as cperr:
+        fatal(f"uv failed to install pyuwsgi: {cperr.stderr.decode()}")
+
+
+def install_pikesquares_localdev(
+    venv_dir: Path,
+    localdev_dir: Path | None,
+) -> None:
 
     py_bin = Path(os.environ.get("PIKESQUARES_PYTHON_BIN"))
     if not py_bin.exists():
@@ -106,10 +164,8 @@ def install_pikesquares_localdev(
     try:
         compl = subprocess.run(
             args=[
-                str(uv_bin),
+                str(get_uv_bin()),
                 'sync',
-                "--python",
-                str(py_bin),
                 "--verbose",
             ],
             env={
@@ -120,26 +176,121 @@ def install_pikesquares_localdev(
             check=True,
             #user="",
         )
+        print(compl.stdout.decode())
+        print(compl)
+        print(" ".join(compl.args))
+        if compl.stderr:
+            print(compl.stderr.decode())
+        #if compl.returncode != 0:
+        #    print(compl.stderr.decode())
+        #    fatal("unable to install deps")
+        #else:
+        #    info("PikeSquares project dependencies installed")
     except subprocess.CalledProcessError as cperr:
         print(f"uv failed to sync dependencies: {cperr.stderr.decode()}")
-        return
-
-    if compl.returncode != 0:
-        print("unable to install dependencies")
-
-    print(compl.stderr.decode())
-    print(compl.stdout.decode())
+        fatal("unable to install deps")
 
 
-    cmd = f"""\
-            UV_PROJECT_ENVIRONMENT={str(venv_dir)} {str(uv_bin)} sync --python {str(py_bin)} --verbose
-            """
-    print(cmd)
+    #cmd = f"""\
+    #        UV_PROJECT_ENVIRONMENT={str(venv_dir)} {str(uv_bin)} sync --python {str(py_bin)} --verbose
+    #        """
+    #print(cmd)
 
     #uv_venv(venv_dir, uv_bin, py_bin, localdev_dir)
     #uv_sync(venv_dir, uv_bin, py_bin, localdev_dir)
     #if localdev_dir:
     #    uv_add_pikesquares_editable(venv_dir, uv_bin, py_bin, localdev_dir)
+
+
+def main() -> NoReturn:
+    parser = ArgumentParser()
+    get_ptex = Ptex.add_options(parser)
+    parser.add_argument(
+        "--pikesquares-version", type=Version, required=True, help="The PikeSquares version to install"
+    )
+    parser.add_argument("--debug", type=bool, help="Install with debug capabilities.")
+    parser.add_argument("--localdev-dir", type=str, help="PikeSquares repo as editable install.")
+    parser.add_argument("base_dir", nargs=1, help="The base directory to create PikeSquares venvs in.")
+    options = parser.parse_args()
+
+    ptex = get_ptex(options)
+
+    base_dir = Path(options.base_dir[0])
+    init_logging(base_dir=base_dir, log_name="install")
+
+    env_file = os.environ.get("SCIE_BINDING_ENV")
+    if not env_file:
+        fatal("Expected SCIE_BINDING_ENV to be set in the environment")
+
+    venvs_dir = base_dir / "venvs"
+
+    version = options.pikesquares_version
+    debug(f"lift.bindings.install: Bootstrapping PikeSquares {version}")
+    #python_version = ".".join(map(str, sys.version_info[:3]))
+    #debug(f"PikeSquares itself is using: {sys.implementation.name} {python_version}")
+
+    APP_NAME="pikesquares"
+    venv_dir = venvs_dir / str(version)
+    current_user: str = pwd.getpwuid(os.getuid()).pw_name
+    data_dir = platformdirs.user_data_path(APP_NAME, current_user)
+    log_dir = platformdirs.user_log_path(APP_NAME, current_user)
+    config_dir = platformdirs.user_config_path(APP_NAME, current_user)
+
+    #if "dev" in str(version):
+    #    localdev_dir = os.environ.get("PIKESQUARES_LOCALDEV_DIR")
+    if options.localdev_dir and Path(options.localdev_dir).exists():
+        install_pikesquares_localdev(
+            venv_dir=venv_dir,
+            localdev_dir=Path(options.localdev_dir)
+        )
+        install_pyuwsgi(
+            venv_dir=venv_dir,
+            localdev_dir=Path(options.localdev_dir)
+        )
+
+    else:
+        install_pikesquares_from_pex(
+            venv_dir=venv_dir,
+            prompt=f"PikeSquares {version}",
+            version=version,
+            ptex=ptex,
+        )
+        info(
+            f"Installing pikesquares=={version} into a virtual environment at {venv_dir}"
+        )
+    info(f"New virtual environment successfully created at {venv_dir}")
+
+    pyuwsgi_bin = venv_dir / "bin" / "pyuwsgi"
+    if not (pyuwsgi_bin).exists():
+        fatal(f"could not locate pyuwsgi @ {str(pyuwsgi_bin)}")
+
+    pikesquares_server_exe = str(venv_dir / "bin" / "pikesquares")
+
+    with open(env_file, "a") as fp:
+        print(f"VIRTUAL_ENV={venv_dir}", file=fp)
+        print(f"PIKESQUARES_SERVER_EXE={pikesquares_server_exe}", file=fp)
+        print(f"PIKESQUARES_UWSGI_BIN={str(pyuwsgi_bin)}", file=fp)
+        print(f"PIKESQUARES_DATA_DIR={data_dir}", file=fp)
+        print(f"PIKESQUARES_LOG_DIR={log_dir}", file=fp)
+        print(f"PIKESQUARES_CONFIG_DIR={config_dir}", file=fp)
+        print(f"PIKESQUARES_VERSION={version}", file=fp)
+
+    """
+    with TinyDB(data_dir / "device-db.json") as db:
+        conf_db = db.table('configs')
+        conf_db.upsert(
+            {
+                'VIRTUAL_ENV': str(venv_dir),
+            },
+            Query().version == str(version),
+        )
+    """
+
+    sys.exit(0)
+
+
+
+
 
 ###############################################################################
 ########################## legacy pip-based workflow
@@ -230,87 +381,10 @@ def install_pikesquares_localdev_pip(
     )
 
 
-def main() -> NoReturn:
-    parser = ArgumentParser()
-    get_ptex = Ptex.add_options(parser)
-    parser.add_argument(
-        "--pikesquares-version", type=Version, required=True, help="The PikeSquares version to install"
-    )
-    parser.add_argument("--debug", type=bool, help="Install with debug capabilities.")
-    parser.add_argument("--localdev-dir", type=str, help="PikeSquares repo as editable install.")
-    parser.add_argument("base_dir", nargs=1, help="The base directory to create PikeSquares venvs in.")
-    options = parser.parse_args()
-
-    ptex = get_ptex(options)
-
-    base_dir = Path(options.base_dir[0])
-    init_logging(base_dir=base_dir, log_name="install")
-
-    env_file = os.environ.get("SCIE_BINDING_ENV")
-    if not env_file:
-        fatal("Expected SCIE_BINDING_ENV to be set in the environment")
-
-    venvs_dir = base_dir / "venvs"
-
-    version = options.pikesquares_version
-    debug(f"lift.bindings.install: Bootstrapping PikeSquares {version}")
-    #python_version = ".".join(map(str, sys.version_info[:3]))
-    #debug(f"PikeSquares itself is using: {sys.implementation.name} {python_version}")
-
-    APP_NAME="pikesquares"
-    venv_dir = venvs_dir / str(version)
-    pikesquares_server_exe = str(venv_dir / "bin" / "pikesquares")
-    current_user: str = pwd.getpwuid(os.getuid()).pw_name
-    data_dir = platformdirs.user_data_path(APP_NAME, current_user)
-    log_dir = platformdirs.user_log_path(APP_NAME, current_user)
-    config_dir = platformdirs.user_config_path(APP_NAME, current_user)
-
-    #if "dev" in str(version):
-    #    localdev_dir = os.environ.get("PIKESQUARES_LOCALDEV_DIR")
-    if options.localdev_dir and Path(options.localdev_dir).exists():
-        install_deps = True
-        #if venv_dir.exists() and questionary.confirm(
-        #        """Local PikeSquares dev venv exists. Skip installing dependencies?""",
-        #        default=True, auto_enter=True, style="bold italic fg:yellow",).ask():
-        #    install_deps = False
-
-        if install_deps:
-            install_pikesquares_localdev(
-                venv_dir=venv_dir,
-                localdev_dir=Path(options.localdev_dir)
-            )
-    else:
-        install_pikesquares_from_pex(
-            venv_dir=venv_dir,
-            prompt=f"PikeSquares {version}",
-            version=version,
-            ptex=ptex,
-        )
-        info(
-            f"Installing pikesquares=={version} into a virtual environment at {venv_dir}"
-        )
-    info(f"New virtual environment successfully created at {venv_dir}")
-
-
-    with open(env_file, "a") as fp:
-        print(f"VIRTUAL_ENV={venv_dir}", file=fp)
-        print(f"PIKESQUARES_SERVER_EXE={pikesquares_server_exe}", file=fp)
-        print(f"PIKESQUARES_DATA_DIR={data_dir}", file=fp)
-        print(f"PIKESQUARES_LOG_DIR={log_dir}", file=fp)
-        print(f"PIKESQUARES_CONFIG_DIR={config_dir}", file=fp)
-        print(f"PIKESQUARES_VERSION={version}", file=fp)
-
-    with TinyDB(data_dir / "device-db.json") as db:
-        conf_db = db.table('configs')
-        conf_db.upsert(
-            {
-                'VIRTUAL_ENV': str(venv_dir),
-            },
-            Query().version == str(version),
-        )
-
-    sys.exit(0)
-
-
 if __name__ == "__main__":
     main()
+
+
+
+
+
