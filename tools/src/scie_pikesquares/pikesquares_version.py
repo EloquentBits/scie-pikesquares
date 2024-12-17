@@ -3,16 +3,9 @@ from __future__ import annotations
 import importlib.resources
 import json
 import logging
-import os
-import urllib.parse
+#import urllib.parse
 from dataclasses import dataclass
-from pathlib import Path
-from subprocess import CalledProcessError
-from typing import Callable
-from xml.etree import ElementTree
 
-import tomlkit
-from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
 from scie_pikesquares.log import fatal, info, warn
@@ -45,7 +38,7 @@ def determine_tag_version(
 def determine_latest_stable_version(
     ptex: Ptex, 
 ) -> ResolveInfo:
-    info(f"Fetching latest stable PikeSquares version.")
+    info("Fetching latest stable PikeSquares version.")
 
     try:
         pikesquares_version = ptex.fetch_json(

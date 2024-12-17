@@ -260,16 +260,20 @@ def main() -> NoReturn:
         )
     info(f"New virtual environment successfully created at {venv_dir}")
 
-    pyuwsgi_bin = venv_dir / "bin" / "pyuwsgi"
-    if not (pyuwsgi_bin).exists():
-        fatal(f"could not locate pyuwsgi @ {str(pyuwsgi_bin)}")
+    # pyuwsgi_bin = venv_dir / "bin" / "pyuwsgi"
+    # if not (pyuwsgi_bin).exists():
+    #    fatal(f"could not locate pyuwsgi @ {str(pyuwsgi_bin)}")
+
+    uwsgi_bin = venv_dir / "bin" / "uwsgi"
+    if not (uwsgi_bin).exists():
+        fatal(f"could not locate uWSGI binary @ {str(uwsgi_bin)}")
 
     pikesquares_server_exe = str(venv_dir / "bin" / "pikesquares")
 
     with open(env_file, "a") as fp:
         print(f"VIRTUAL_ENV={venv_dir}", file=fp)
         print(f"PIKESQUARES_SERVER_EXE={pikesquares_server_exe}", file=fp)
-        print(f"PIKESQUARES_UWSGI_BIN={str(pyuwsgi_bin)}", file=fp)
+        print(f"PIKESQUARES_UWSGI_BIN={str(uwsgi_bin)}", file=fp)
         print(f"PIKESQUARES_DATA_DIR={data_dir}", file=fp)
         print(f"PIKESQUARES_LOG_DIR={log_dir}", file=fp)
         print(f"PIKESQUARES_CONFIG_DIR={config_dir}", file=fp)
